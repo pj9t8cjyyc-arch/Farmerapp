@@ -130,6 +130,7 @@ def test_alerts():
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
     monkeypatch.setattr(db, "DB_PATH", str(tmp_path / "t.db"))
+    monkeypatch.setenv("FARMER_AUTH", "off")
     db.init()
     monkeypatch.setattr(main.wx, "get", lambda lat, lon: fake_weather() if lat is not None else {"ok": False, "error": "no location"})
     return TestClient(main.app)

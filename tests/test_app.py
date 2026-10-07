@@ -3,6 +3,7 @@ import tempfile
 
 os.environ["FARMER_DB"] = os.path.join(tempfile.mkdtemp(), "t.db")
 os.environ.pop("DATA_GOV_API_KEY", None)
+os.environ["FARMER_AUTH"] = "off"   # these tests exercise the app in single-user mode; tests/test_auth.py covers login
 
 import numpy as np
 from fastapi.testclient import TestClient

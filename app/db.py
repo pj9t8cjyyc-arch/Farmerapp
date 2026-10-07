@@ -33,6 +33,21 @@ CREATE TABLE IF NOT EXISTS farm (
     id INTEGER PRIMARY KEY CHECK (id = 1), district TEXT NOT NULL DEFAULT '',
     lat REAL, lon REAL, onboarded INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS farmers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS otps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL, code_hash TEXT NOT NULL, channel TEXT NOT NULL,
+    ip TEXT NOT NULL DEFAULT '', created INTEGER NOT NULL, expires INTEGER NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0, consumed INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS ix_otp_phone ON otps (phone, created);
+CREATE TABLE IF NOT EXISTS sessions (
+    token_hash TEXT PRIMARY KEY, farmer_id INTEGER NOT NULL, created INTEGER NOT NULL, expires INTEGER NOT NULL, last_used INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS farmer_farm (
+    farmer_id INTEGER PRIMARY KEY, district TEXT NOT NULL DEFAULT '', lat REAL, lon REAL, onboarded INTEGER NOT NULL DEFAULT 0
+);
 CREATE TABLE IF NOT EXISTS activities (
     id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, crop TEXT NOT NULL, plot_id INTEGER,
     kind TEXT NOT NULL, task_key TEXT NOT NULL DEFAULT '', qty REAL, unit TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT ''
@@ -63,9 +78,16 @@ PLOT_COLUMNS = {
 }
 
 
+OWNED_TABLES = ("plots", "expenses", "sales", "activities")  # rows that belong to one farmer
+
+
 def init():
     with conn() as c:
         c.executescript(SCHEMA)
+        for t in OWNED_TABLES:  # per-farmer data: older databases get the column, legacy rows stay NULL until claimed
+            if "farmer_id" not in {r["name"] for r in c.execute(f"PRAGMA table_info({t})")}:
+                c.execute(f"ALTER TABLE {t} ADD COLUMN farmer_id INTEGER")
+            c.execute(f"CREATE INDEX IF NOT EXISTS ix_{t}_farmer ON {t} (farmer_id)")
         have = {r["name"] for r in c.execute("PRAGMA table_info(plots)")}
         for col, ddl in PLOT_COLUMNS.items():  # upgrade databases created by earlier versions
             if col not in have:
