@@ -26,3 +26,14 @@ canvas{max-height:260px}.pos{color:var(--ac)}.neg{color:var(--bad)}
 tr.profit td{background:var(--gbg)}tr.small td{background:var(--obg)}tr.loss td{background:var(--rbg)}tr.yours td{font-weight:700;outline:0;border-top:2px solid var(--blue);border-bottom:2px solid var(--blue)}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;margin:8px 0}.legend span{display:flex;gap:6px;align-items:center}
 .mut{color:var(--mut);font-size:12px}
+
+.chips{position:sticky;top:0;z-index:5;display:flex;gap:8px;overflow-x:auto;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--bd);scrollbar-width:thin}
+.chip{width:auto;flex:none;white-space:nowrap;min-height:40px;border-radius:99px;padding:6px 14px;background:var(--card);color:var(--fg);border:1px solid var(--bd);display:flex;align-items:center;gap:7px}
+.chip.on{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600}.chip.add{border-style:dashed;color:var(--mut)}
+.grey{background:var(--mut)}
+body[data-view=all] .cv{display:none!important}body:not([data-view=all]) .av{display:none!important}
+.ccgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+button.cc{width:100%;text-align:left;display:block;background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:12px;padding:12px;min-height:0;white-space:pre-line}
+button.cc:hover{border-color:var(--ac)}button.cc .nm{display:flex;align-items:center;gap:8px;font-weight:600}
+button.cc .big{font-size:22px;font-weight:700;margin-top:4px}button.cc .sm{color:var(--mut);font-size:12.5px}
+.up{color:var(--ac)}.dn{color:var(--bad)}

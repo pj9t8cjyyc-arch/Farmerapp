@@ -7,12 +7,16 @@
 <header><h1>🌾 <span data-i="title"></span></h1>
 <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
 <div class="seg" id="lang"><button data-l="te">తెలుగు</button><button data-l="en">English</button><button data-l="both">రెండూ · Both</button></div>
-<div><label data-i="crop"></label><select id="crop"></select></div>
 <button id="refresh" style="width:auto" data-i="refresh"></button><span id="src" class="badge"></span></div></header>
+<nav id="chips" class="chips" aria-label="Crops"></nav>
 <main>
 <div class="grid" id="kpis"></div>
+<div class="card av" id="emptyNote" hidden></div>
+<div class="card av"><h2 data-i="myCrops"></h2><div id="cropCards" class="ccgrid"></div></div>
+<div class="card cv" id="cropHead"><h2 id="headTitle"></h2><div id="headInfo" class="mut"></div>
+<div style="overflow-x:auto"><table id="plotTbl"></table></div></div>
 
-<div class="card" id="calc"><h2 id="calcTitle"></h2>
+<div class="card cv" id="calc"><h2 id="calcTitle"></h2>
 <div class="sec"><i class="dot blue"></i><span data-i="moneyOut"></span></div>
 <form id="fc" onsubmit="return false" style="grid-template-columns:1fr 1fr">
 <div><label data-i="invested"></label><input name="invested_per_acre" type="number" inputmode="decimal" min="0" step="any"></div>
@@ -25,13 +29,13 @@
 <button id="useMsp" type="button" style="display:none;margin-top:8px;background:var(--card);color:var(--fg);border:1px solid var(--bd)"></button>
 <div id="calcOut"></div></div>
 
-<div class="card"><h2 data-i="priceChart"></h2><canvas id="priceChart"></canvas><div id="fcinfo" class="mut"></div></div>
-<div class="two"><div class="card"><h2 data-i="sell"></h2><div id="sell"></div></div>
+<div class="card cv"><h2 data-i="priceChart"></h2><canvas id="priceChart"></canvas><div id="fcinfo" class="mut"></div></div>
+<div class="two"><div class="card cv"><h2 data-i="sell"></h2><div id="sell"></div></div>
 <div class="card"><h2 data-i="costIns"></h2><div id="cost"></div></div></div>
 <div class="two"><div class="card"><h2 data-i="byCat"></h2><canvas id="catChart"></canvas></div>
 <div class="card"><h2 data-i="byMonth"></h2><canvas id="monChart"></canvas></div></div>
-<div class="card"><h2 data-i="markets"></h2><div style="overflow-x:auto"><table id="mk"></table></div></div>
-<div class="two">
+<div class="card cv"><h2 data-i="markets"></h2><div style="overflow-x:auto"><table id="mk"></table></div></div>
+<div class="two cv">
 <div class="card"><h2 data-i="addExp"></h2><form id="fe">
 <div><label data-i="date"></label><input name="date" type="date" required></div>
 <div><label data-i="category"></label><select name="category"></select></div>
@@ -43,10 +47,11 @@
 <div><label data-i="pricePerQ"></label><input name="price_per_quintal" type="number" inputmode="decimal" min="1" step="any" required></div>
 <div><label data-i="market"></label><input name="market" maxlength="80"></div><button data-i="save"></button></form></div></div>
 <div class="two">
-<div class="card"><h2 data-i="addPlot"></h2><form id="fp">
+<div class="card" id="addCrop"><h2 data-i="addCropTitle"></h2><form id="fp">
+<div><label data-i="crop"></label><select name="crop" id="plotCrop"></select></div>
 <div><label data-i="area"></label><input name="area_acre" type="number" inputmode="decimal" min="0.01" step="any" required></div>
 <div><label data-i="sowing"></label><input name="sowing_date" type="date"></div><button data-i="save"></button></form></div>
-<div class="card"><h2 data-i="fert"></h2><form id="ff">
+<div class="card cv"><h2 data-i="fert"></h2><form id="ff">
 <div><label data-i="area"></label><input name="area_acre" type="number" inputmode="decimal" min="0.01" step="any" required></div>
 <div><label data-i="soilN"></label><input name="soil_n" type="number" min="0" step="any"></div>
 <div><label data-i="soilP"></label><input name="soil_p" type="number" min="0" step="any"></div>

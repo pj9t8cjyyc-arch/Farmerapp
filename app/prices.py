@@ -28,6 +28,10 @@ def seed_demo(crop: str, days: int = 120) -> int:
     """Idempotently generate `days` of synthetic daily prices per demo market."""
     base = crops.CROPS[crop][1]
     today = date.today()
+    with db.conn() as c:
+        if c.execute("SELECT 1 FROM price_history WHERE crop=? AND source='demo' AND date=? LIMIT 1",
+                     (crop, today.isoformat())).fetchone():
+            return 0
     rows = []
     for state, market in DEMO_MARKETS:
         mk = 0.92 + 0.16 * _seed(crop, market)

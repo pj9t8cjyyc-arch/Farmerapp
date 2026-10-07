@@ -16,6 +16,7 @@ Data is stored in SQLite (`FARMER_DB`, default `./farmer.db`).
 - **Telugu / English / Both** language switch across the UI and all server advice (`text` + `text_te`).
 - **Profit calculator** (`POST /api/calc/profit`): per-acre and per-quintal profit, ROI, break-even, price for a target profit, profit table at other prices, MSP shortcut (`app/msp.json`).
 - **Installable PWA** (offline shell) and a Capacitor wrapper for Android/iOS: see `docs/MOBILE.md`.
+- **One farmer, many crops**: sticky crop tabs (with profit/loss dot) to swap instantly, an **All crops** overview with one card per crop (profit, cost, price now, 14-day trend), per-crop plots/sowing dates, and each crop remembers its own calculator numbers. `GET /api/overview` serves the cards.
 - **Expenses / sales / plots** per crop (chilli, onion, tomato, paddy, wheat, cotton, maize, groundnut, turmeric); the crop picker drives the whole dashboard.
 - **Dashboard**: cost, revenue, profit, cost/acre, cost/quintal, category + monthly charts, per-market prices.
 - **Prices**: Agmarknet via data.gov.in (`/api/prices/{crop}?refresh=true`). Without an API key or enough live history (14+ days) the app falls back to **synthetic demo data, clearly badged "DEMO" and never mixed with live data**. The daily API returns the current day, so live history builds up as you refresh (e.g. a daily cron).

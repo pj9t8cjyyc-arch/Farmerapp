@@ -95,3 +95,17 @@ def test_cors_for_native_app_and_static_assets():
     assert c.options("/api/calc/profit", headers={**h, "Origin": "https://evil.example"}).headers.get("access-control-allow-origin") is None
     for f in ("/", "/app.js", "/i18n.js", "/sw.js", "/manifest.webmanifest", "/vendor/chart.umd.js"):
         assert c.get(f).status_code == 200, f
+
+
+def test_overview_multi_crop_and_filters():
+    c.post("/api/plots", json={"crop": "maize", "area_acre": 1.5, "sowing_date": "2026-07-01"})
+    c.post("/api/expenses", json={"crop": "maize", "date": "2026-07-02", "category": "seed", "amount": 3000})
+    c.post("/api/sales", json={"crop": "maize", "date": "2026-10-01", "qty_quintal": 10, "price_per_quintal": 2400})
+    o = c.get("/api/overview").json()
+    by = {x["crop"]: x for x in o["crops"]}
+    assert {"chilli", "maize"} <= set(by)
+    assert by["maize"]["profit"] == 21000 and by["maize"]["status"] == "profit" and by["maize"]["area_acre"] == 1.5
+    assert by["chilli"]["current_price"] and by["maize"]["price_source"] == "demo"
+    assert round(o["totals"]["profit"], 2) == round(sum(x["profit"] for x in o["crops"]), 2)
+    assert [p["crop"] for p in c.get("/api/plots?crop=maize").json()] == ["maize"]
+    assert c.get("/api/plots?crop=zzz").status_code == 404

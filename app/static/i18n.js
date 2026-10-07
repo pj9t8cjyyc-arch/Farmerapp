@@ -47,6 +47,17 @@ const STR = {
             "MSP అంటే ప్రభుత్వ కనీస మద్దతు ధర; మార్కెట్ ధర ఎక్కువ లేదా తక్కువ ఉండవచ్చు. పెట్టుబడి, దిగుబడి, 15% అనేవి మీ అంచనాలు."],
   fillCalc: ["Enter investment, yield and price to see profit.", "లాభం చూడటానికి పెట్టుబడి, దిగుబడి, ధర నమోదు చేయండి."],
   errPrefix: ["Error", "లోపం"],
+  allCrops: ["All crops", "అన్ని పంటలు"], addCrop: ["Add crop", "పంట చేర్చు"], myCrops: ["My crops (tap to open)", "నా పంటలు (తెరవడానికి నొక్కండి)"],
+  addCropTitle: ["Add a crop or plot", "పంట / పొలం చేర్చండి"], plots: ["Plots", "పొలాలు"],
+  noCrops: ["No crops yet. Add your first crop below.", "ఇంకా పంటలు లేవు. మీ మొదటి పంటను క్రింద చేర్చండి."],
+  noPlots: ["No plots recorded for this crop. Add one below so cost per acre works.", "ఈ పంటకు పొలాలు నమోదు కాలేదు. ఎకరాకు ఖర్చు రావడానికి క్రింద చేర్చండి."],
+  wholeFarm: ["Whole farm", "మొత్తం పొలం"], acres: ["Area (acre)", "విస్తీర్ణం (ఎకరాలు)"], acreN: ["{a} acre", "{a} ఎకరాలు"],
+  spentSoFar: ["Spent so far (no sales yet)", "ఇప్పటి వరకు ఖర్చు (అమ్మకాలు లేవు)"],
+  priceNow: ["Price now", "ఇప్పటి ధర"], next14: ["14-day trend", "14 రోజుల ధోరణి"],
+  sown: ["Sown {d} ({n} days ago)", "విత్తింది {d} ({n} రోజుల క్రితం)"], notSown: ["Sowing date not set", "విత్తిన తేదీ నమోదు కాలేదు"],
+  useMarket: ["Use today's market price: ₹{price}", "నేటి మార్కెట్ ధర వాడండి: ₹{price}"],
+  cropCol: ["Crop", "పంట"], lastAct: ["Last entry {d}", "చివరి నమోదు {d}"],
+  demoMix: ["DEMO prices (not real)", "డెమో ధరలు (నిజమైనవి కావు)"],
 };
 const CROPS_TE = {chilli:"మిర్చి",onion:"ఉల్లి",tomato:"టమాటా",paddy:"వరి",wheat:"గోధుమ",cotton:"పత్తి",maize:"మొక్కజొన్న",groundnut:"వేరుశనగ",turmeric:"పసుపు"};
 const CATS_TE = {seed:"విత్తనాలు",fertilizer:"ఎరువులు",pesticide:"పురుగుమందులు",labour:"కూలీ",irrigation:"నీటిపారుదల",machinery:"యంత్రాలు",transport:"రవాణా",other:"ఇతరాలు"};

@@ -135,7 +135,9 @@ def add_plot(p: PlotIn):
 
 
 @app.get("/api/plots")
-def list_plots():
+def list_plots(crop: str | None = None):
+    if crop:
+        return _rows("SELECT * FROM plots WHERE crop=? ORDER BY id DESC", (_crop(crop),))
     return _rows("SELECT * FROM plots ORDER BY id DESC")
 
 
@@ -201,6 +203,34 @@ def msp():
 @app.post("/api/fertilizer/advice")
 def fert_advice(f: FertIn):
     return advice.fertilizer_plan(f.crop, f.area_acre, f.soil_n, f.soil_p, f.soil_k, f.ph)
+
+
+# ---- whole-farm overview (one farmer, many crops) -------------------------
+@app.get("/api/overview")
+def overview():
+    area = {r["crop"]: r["a"] for r in _rows("SELECT crop, SUM(area_acre) a FROM plots GROUP BY crop")}
+    cost = {r["crop"]: r["t"] for r in _rows("SELECT crop, SUM(amount) t FROM expenses GROUP BY crop")}
+    sold = {r["crop"]: (r["q"], r["r"]) for r in _rows(
+        "SELECT crop, SUM(qty_quintal) q, SUM(qty_quintal*price_per_quintal) r FROM sales GROUP BY crop")}
+    last = {r["crop"]: r["d"] for r in _rows(
+        "SELECT crop, MAX(d) d FROM (SELECT crop, date d FROM expenses UNION ALL SELECT crop, date FROM sales) GROUP BY crop")}
+    out = []
+    for k in sorted(set(area) | set(cost) | set(sold)):
+        q, rev = sold.get(k, (0, 0))
+        c = cost.get(k, 0)
+        s = prices.series(k, None, 120)
+        fc = forecast.forecast(s["prices"], 14)
+        out.append({
+            "crop": k, "area_acre": round(area.get(k, 0), 2), "total_cost": round(c, 2),
+            "revenue": round(rev, 2), "profit": round(rev - c, 2), "quintals_sold": round(q, 2),
+            "status": "pending" if rev == 0 else ("profit" if rev >= c else "loss"),
+            "current_price": s["prices"][-1] if s["prices"] else None, "price_source": s["source"],
+            "expected_change_pct": fc.get("expected_change_pct") if fc.get("ok") else None,
+            "last_activity": last.get(k)})
+    out.sort(key=lambda x: (-x["area_acre"], x["crop"]))
+    tot = lambda f: round(sum(x[f] for x in out), 2)
+    return {"crops": out, "totals": {"area_acre": tot("area_acre"), "total_cost": tot("total_cost"),
+                                     "revenue": tot("revenue"), "profit": tot("profit")}}
 
 
 # ---- dashboard -----------------------------------------------------------
