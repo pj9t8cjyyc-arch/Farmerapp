@@ -56,8 +56,9 @@ def _products(plot: dict, n_kg: float, p_kg: float, k_kg: float, extra: dict | N
 
 
 def _product_text(prod: dict, area: float) -> tuple[str, str]:
-    parts = [(f"{PRODUCT_NAMES[k][0]} {round(v)} kg ({round(v / area)} kg/acre)",
-              f"{PRODUCT_NAMES[k][1]} {round(v)} కి.గ్రా ({round(v / area)} కి.గ్రా/ఎకరా)") for k, v in prod.items()]
+    one = round(area, 1) == 1.0   # per-acre figure is only shown when it differs from the total
+    parts = [(f"{PRODUCT_NAMES[k][0]} {round(v)} kg" + ("" if one else f" ({round(v / area)} kg/acre)"),
+              f"{PRODUCT_NAMES[k][1]} {round(v)} కి.గ్రా" + ("" if one else f" ({round(v / area)} కి.గ్రా/ఎకరా)")) for k, v in prod.items()]
     return ", ".join(p[0] for p in parts), ", ".join(p[1] for p in parts)
 
 
@@ -126,12 +127,12 @@ def irrigation_status(plot: dict, acts: list[dict], weather: dict, today: date) 
     if kb["stop_before_harvest_days"] and today >= stop_from:
         return {**base, "state": "stop", "stop_from": stop_from.isoformat()}
     rainfed = (plot.get("irrigation") or "borewell") == "rainfed"
+    if last is None and not rainfed:   # we cannot know the soil water without a last watering date: ask, do not guess
+        return {**base, "state": "never", "gap_days": kb["interval_days"]}
     if not weather.get("ok"):
         gap = kb["interval_days"]
         if rainfed:
             return {**base, "state": "unknown", "gap_days": gap}
-        if last is None:
-            return {**base, "state": "never", "gap_days": gap}
         return {**base, "state": "fallback_now" if base["days_since"] >= gap else "fallback", "gap_days": gap}
     days = {d["date"]: d for d in weather["days"]}
     first = _d(weather["days"][0]["date"])
@@ -189,7 +190,7 @@ def tasks_for_plot(plot: dict, acts: list[dict], weather: dict, today: date) -> 
 
     st = plot_state(plot, today)
     if st["das"] is None:
-        add("setup", "set_date", "now", msg("t.set_date", "warn", crop=crop))
+        add("setup", "set_date", "now", msg("t.set_date", "warn", crop=crop), {"kind": "setup"})
         return tasks
     for e in fertilizer_events(plot, acts, today):
         if e["status"] not in ("due", "overdue", "soon", "later"):
@@ -216,7 +217,7 @@ def tasks_for_plot(plot: dict, acts: list[dict], weather: dict, today: date) -> 
     elif s == "fallback":
         add("irrigation", "water", "later", msg("t.irrigate_fallback", crop=crop, n=irr["days_since"], g=irr["gap_days"]), water)
     elif s == "never":
-        add("irrigation", "water", "soon", msg("t.irrigate_never", crop=crop), water)
+        add("irrigation", "water", "soon", msg("t.irrigate_never", crop=crop), {"kind": "plan"})
     elif s == "rainfed_dry":
         add("irrigation", "water", "soon", msg("t.rainfed_dry", "warn", crop=crop, d=round(irr["deficit_mm"])), water)
     elif s == "rainfed_ok":

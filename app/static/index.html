@@ -23,6 +23,10 @@
 
 <main id="main">
   <div class="cropbar" id="cropBar" data-t="sum profit prices money fert"></div>
+  <section class="card" id="todayWx" data-t="today"></section>
+  <div id="todayAlerts" data-t="today"></div>
+  <section class="card" id="todayTasks" data-t="today"></section>
+  <section class="card" id="todayCropsCard" data-t="today"><h2 data-i="myFarm"></h2><div id="todayCrops" class="ccgrid"></div></section>
   <section class="card hero" id="hero" data-t="sum"></section>
   <div class="grid" id="kpisAll" data-t="all"></div>
   <div class="grid" id="kpisCrop" data-t="sum"></div>
@@ -72,7 +76,14 @@
     <section class="card"><h2 data-i="byMonth"></h2><canvas id="monChart"></canvas></section>
   </div>
 
-  <section class="card" data-t="fert"><h2 data-i="fert"></h2>
+  <section class="card" id="planBanner" data-t="plan"></section>
+  <section class="card" id="planTasks" data-t="plan"></section>
+  <section class="card" id="irrig" data-t="plan"></section>
+  <section class="card" id="fertSched" data-t="plan"></section>
+  <details class="card" id="stages" data-t="plan"></details>
+  <section class="card" id="planTips" data-t="plan"></section>
+  <div class="mut" id="guideline" data-t="plan"></div>
+  <details class="card" data-t="plan"><summary data-i="calcDetails"></summary>
     <form id="ff" class="pair">
       <div><label data-i="area"></label><input name="area_acre" type="number" inputmode="decimal" min="0.01" step="any" required></div>
       <div><label data-i="soilN"></label><input name="soil_n" type="number" min="0" step="any"></div>
@@ -81,7 +92,7 @@
       <div><label data-i="ph"></label><input name="ph" type="number" min="0" max="14" step="any"></div>
       <button class="full" data-i="getPlan"></button>
     </form><div id="fert"></div>
-  </section>
+  </details>
 
   <section class="card" data-t="sum"><h2 data-i="plots"></h2><div class="scroll"><table id="plotTbl"></table></div></section>
   <section class="card" id="addCrop" data-t="all sum"><h2 data-i="addCropTitle"></h2>
@@ -92,6 +103,8 @@
     </form>
   </section>
 </main>
+<div id="wizard" class="wizard" hidden role="dialog" aria-modal="true"></div>
+<div id="toast" class="toast" hidden></div>
 <script src="/config.js"></script><script src="/i18n.js"></script>
-<script src="/vendor/chart.umd.js"></script><script src="/app.js"></script>
+<script src="/vendor/chart.umd.js"></script><script src="/wizard.js"></script><script src="/app.js"></script>
 </body></html>

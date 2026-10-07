@@ -78,6 +78,18 @@ def test_irrigation_water_balance():
     assert wait_rain["state"] == "ok" and (wait_rain["in_days"] is None or wait_rain["in_days"] > 3)
 
 
+def test_never_watered_asks_instead_of_guessing():
+    assert engine.irrigation_status(plot("maize", 30), [], fake_weather(), TODAY)["state"] == "never"
+    t = next(t for t in engine.tasks_for_plot(plot("maize", 30), [], fake_weather(), TODAY) if t["kind"] == "irrigation")
+    assert t["action"] == {"kind": "plan"} and t["urgency"] == "soon"
+
+
+def test_telugu_dative_follows_crop_name():
+    from app.i18n import msg
+    assert "మిర్చికి" in msg("t.irrigate_now", crop="chilli", d=1, t=1)["text_te"]
+    assert "టమాటాకు" in msg("t.irrigate_now", crop="tomato", d=1, t=1)["text_te"]
+
+
 def test_irrigation_special_modes():
     assert engine.irrigation_status(plot("paddy", 30), [], fake_weather(), TODAY)["state"] == "ponded"
     assert engine.irrigation_status(plot("onion", 95), [], fake_weather(), TODAY)["state"] == "stop"       # stop watering before harvest
@@ -134,6 +146,12 @@ def test_onboarding_creates_farm_and_plots(client):
     plots = {p["crop"]: p for p in client.get("/api/plots").json()}
     assert plots["maize"]["season"] in ("kharif", "rabi", "summer") and plots["maize"]["created_on"] == TODAY.isoformat()
     assert plots["chilli"]["season"] == "" and plots["chilli"]["irrigation"] == "drip"
+    water = client.get("/api/activities?kind=irrigation").json()
+    assert len(water) == 0                                    # none given -> nothing invented
+    client.post("/api/onboard", json={"crops": [{"crop": "onion", "area_acre": 1, "planted_on": iso(-10), "irrigation": "canal", "last_watered_on": iso(-2)},
+                                                {"crop": "tomato", "area_acre": 1, "planted_on": iso(-10), "irrigation": "rainfed", "last_watered_on": iso(-2)}]})
+    water = client.get("/api/activities?kind=irrigation").json()
+    assert [w["crop"] for w in water] == ["onion"] and water[0]["date"] == iso(-2)       # rain-fed plots never get a watering log
     assert client.post("/api/onboard", json={"crops": []}).status_code == 422
     assert client.post("/api/onboard", json={"crops": [{"crop": "bogus", "area_acre": 1}]}).status_code == 422
 
@@ -149,6 +167,8 @@ def test_today_screen_logging_and_plan(client):
     a = next(x for x in t["tasks"] if x["key"] == "top1")["action"]
     assert client.post("/api/activities", json={"crop": "maize", "plot_id": t["plots"][0]["plot_id"], **a}).status_code == 201
     assert ("fertilizer", "top1") not in {(x["kind"], x["key"]) for x in client.get("/api/today").json()["tasks"]}
+    # no watering logged yet -> the app asks instead of guessing
+    assert client.get("/api/plan/maize").json()["irrigation"]["state"] == "never"
     # watering resets the irrigation advice and counts waterings
     pid = t["plots"][0]["plot_id"]
     client.post("/api/activities", json={"crop": "maize", "plot_id": pid, "kind": "irrigation"})

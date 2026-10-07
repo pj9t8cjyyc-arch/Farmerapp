@@ -12,6 +12,14 @@ pytest
 ```
 Data is stored in SQLite (`FARMER_DB`, default `./farmer.db`).
 
+## Farm assistant (v0.2)
+- **One-minute setup** (first run): language, place (GPS or district), crops by picture, then per crop: acres (stepper), planting date (chips), water source, last watering. Season (kharif/rabi/summer) is worked out from the planting date.
+- **Today screen**: weather now + 7 days, alerts (heavy rain, heat), and the top things to do with one-tap Done / Watered / Later (with undo).
+- **Crop plan**: growth stage and progress, fertilizer schedule with product quantities for the plot's area, watering advice from a soil-water balance (live ET0 and rain, crop coefficient by stage), key watering windows, harvest window.
+- **Live data**: weather via Open-Meteo (30-minute cache, stale fallback); mandi prices via Agmarknet refreshed every `FARMER_REFRESH_MINUTES` (default 180) when `DATA_GOV_API_KEY` is set; the app refreshes itself every 5 minutes and when reopened. Agmarknet publishes daily, so "real time" for prices means as soon as the market publishes.
+- **Knowledge base**: `app/knowledge/crops.json` holds every crop's stages, fertilizer split and watering rules, flagged `reviewed: false` until an agriculture officer signs off. `knowledge.problems()` (run by the tests) checks it after every edit.
+- `FARMER_SAMPLE_WEATHER=1` runs with clearly-labelled sample weather (offline demos).
+
 ## Features
 - **Telugu / English / Both** language switch across the UI and all server advice (`text` + `text_te`).
 - **Profit calculator** (`POST /api/calc/profit`): per-acre and per-quintal profit, ROI, break-even, price for a target profit, profit table at other prices, MSP shortcut (`app/msp.json`).

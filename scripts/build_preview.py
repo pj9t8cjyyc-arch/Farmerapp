@@ -9,10 +9,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 os.environ["FARMER_DB"] = os.path.join(tempfile.mkdtemp(), "preview.db")
 os.environ.pop("DATA_GOV_API_KEY", None)
+os.environ["FARMER_SAMPLE_WEATHER"] = "1"   # offline sample weather (labelled "sample" in the UI)
 sys.path.insert(0, str(ROOT))
 
 from fastapi.testclient import TestClient  # noqa: E402
-from app import advice, crops, i18n  # noqa: E402
+from datetime import timedelta  # noqa: E402
+from app import advice, clock, crops, i18n  # noqa: E402
 from app.main import app  # noqa: E402
 
 c = TestClient(app)
@@ -28,8 +30,20 @@ SEED = {  # sample farm: one profit, one loss, one with no sales yet
     "onion": dict(area=1, sown="2026-08-15",
                   exp=[("2026-08-16", "seed", 12000), ("2026-08-20", "fertilizer", 9000), ("2026-09-15", "labour", 8000)], sales=[]),
 }
+TODAY = clock.today()
+ago = lambda n: (TODAY - timedelta(n)).isoformat()
+PLAN_SEED = {  # crop: (planted days ago, water source, last watered days ago, fertilizer steps already logged)
+    "maize": (40, "borewell", 8, ["basal"]),
+    "chilli": (55, "drip", 3, ["basal", "top1"]),
+    "onion": (12, "canal", 4, []),
+}
+assert c.put("/api/farm", json={"district": "Guntur", "lat": 16.3, "lon": 80.44}).status_code == 200
 for k, v in SEED.items():
-    assert c.post("/api/plots", json={"crop": k, "area_acre": v["area"], "sowing_date": v["sown"]}).status_code == 201
+    planted, water, watered, logged = PLAN_SEED[k]
+    pid = c.post("/api/plots", json={"crop": k, "area_acre": v["area"], "sowing_date": ago(planted), "irrigation": water}).json()["id"]
+    c.post("/api/activities", json={"crop": k, "plot_id": pid, "kind": "irrigation", "date": ago(watered)})
+    for key in logged:
+        c.post("/api/activities", json={"crop": k, "plot_id": pid, "kind": "fertilizer", "task_key": key, "qty": 50, "unit": "kg", "date": ago(planted - 2)})
     for d, cat, amt in v["exp"]:
         assert c.post("/api/expenses", json={"crop": k, "date": d, "category": cat, "amount": amt}).status_code == 201
     for d, q, p, m in v["sales"]:
@@ -39,13 +53,13 @@ snap = {}
 def grab(path):
     r = c.get(path); assert r.status_code == 200, path
     snap[path] = r.json()
-for p in ("/api/meta", "/api/msp", "/api/overview", "/api/dashboard", "/api/expenses", "/api/sales"):
+for p in ("/api/meta", "/api/msp", "/api/overview", "/api/dashboard", "/api/expenses", "/api/sales", "/api/farm", "/api/districts", "/api/today"):
     grab(p)
 for k in SEED:
-    for p in (f"/api/dashboard?crop={k}", f"/api/expenses?crop={k}", f"/api/sales?crop={k}", f"/api/plots?crop={k}", f"/api/prices/{k}?days=90"):
+    for p in (f"/api/dashboard?crop={k}", f"/api/expenses?crop={k}", f"/api/sales?crop={k}", f"/api/plots?crop={k}", f"/api/prices/{k}?days=90", f"/api/plan/{k}"):
         grab(p)
 for k in crops.CROPS:  # crops the viewer may add are not seeded; keep lookups safe
-    for p in (f"/api/dashboard?crop={k}", f"/api/prices/{k}?days=90"):
+    for p in (f"/api/dashboard?crop={k}", f"/api/prices/{k}?days=90", f"/api/plan/{k}"):
         if p not in snap:
             grab(p)
 
@@ -87,6 +101,8 @@ window.fetch = (u, o = {}) => {
   if (m === "GET") return path in D ? reply(D[path]) : reply("Not part of this preview", false);
   if (path === "/api/calc/profit") return reply(profit(JSON.parse(o.body)));
   if (path === "/api/fertilizer/advice") return reply(fert(JSON.parse(o.body)));
+  if (path === "/api/onboard") return reply({plot_ids: []});
+  if (path === "/api/farm") return reply(D["/api/farm"]);
   toast("Preview only: saving is turned off here"); return reply("Preview only: saving is turned off", false);
 };
 })();""" % (json.dumps(snap, ensure_ascii=False, separators=(",", ":")), json.dumps(fert, ensure_ascii=False, separators=(",", ":")))
@@ -100,12 +116,15 @@ chart_src = (static / "vendor" / "chart.umd.js").as_uri() if "--local-chart" in 
 out = f"""<title>Farmer App</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap">
 <style>{(static / "style.css").read_text(encoding="utf-8")}
-.pv{{background:var(--ac-soft);color:var(--fg);font-size:12px;text-align:center;padding:4px 8px}}</style>
-<div class="pv">Preview with sample farm data. Saving is turned off here.</div>
+.pv{{background:var(--ac-soft);color:var(--fg);font-size:12px;text-align:center;padding:4px 8px}}
+.pv button{{width:auto;min-height:0;padding:1px 10px;margin-left:8px;font-size:12px}}</style>
+<div class="pv">Preview with sample farm data and sample weather. Saving is turned off here.
+<button type="button" onclick="openWizard('first')">Try first-time setup</button></div>
 {body}
 <script>{SHIM}</script>
 <script>{(static / "i18n.js").read_text(encoding="utf-8")}</script>
 <script src="{chart_src}"></script>
+<script>{(static / "wizard.js").read_text(encoding="utf-8")}</script>
 <script>{(static / "app.js").read_text(encoding="utf-8")}</script>
 """
 Path(sys.argv[1]).write_text(out, encoding="utf-8")

@@ -136,6 +136,10 @@ M = {  # code: (English, Telugu)
 }
 
 
+# Telugu dative: crop names ending in "ి" take "కి" (మిర్చికి), others "కు" (టమాటాకు)
+M = {k: (en, te.replace("{crop}కు", "{crop_dat}")) for k, (en, te) in M.items()}
+
+
 def msg(code: str, level: str = "info", crop: str | None = None, **kw) -> dict:
     """Render a bilingual message. A keyword value may be an (English, Telugu) tuple for text that differs by language."""
     en, te = M[code]
@@ -144,4 +148,5 @@ def msg(code: str, level: str = "info", crop: str | None = None, **kw) -> dict:
     if crop:
         names = CROP_NAMES.get(crop, (crop, crop))
         kw_en["crop"], kw_te["crop"] = names
+        kw_te["crop_dat"] = names[1] + ("కి" if names[1].endswith("ి") else "కు")
     return {"code": code, "level": level, "text": en.format(**kw_en), "text_te": te.format(**kw_te)}

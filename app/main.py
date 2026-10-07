@@ -92,6 +92,7 @@ class PlotIn(_Base):
     soil_k: float | None = Field(None, ge=0, le=5000)
     ph: float | None = Field(None, ge=0, le=14)
     note: str = Field("", max_length=200)
+    last_watered_on: _Date | None = None  # logged as a first irrigation activity
 
 
 class PlotPatch(BaseModel):
@@ -124,6 +125,7 @@ class OnboardCrop(_Base):
     area_acre: float = Field(gt=0, lt=1e5)
     planted_on: date | None = None
     irrigation: Water = "borewell"
+    last_watered_on: _Date | None = None
 
 
 class OnboardIn(FarmIn):
@@ -199,8 +201,13 @@ def del_sale(id_: int):
 
 
 def _new_plot(data: dict) -> int:
+    data = dict(data)
+    watered = data.pop("last_watered_on", None)
     d = clock.parse(str(data["sowing_date"])) if data.get("sowing_date") else None
-    return _add("plots", {**data, "season": clock.season_of(d), "created_on": clock.today(), "status": "active"})
+    pid = _add("plots", {**data, "season": clock.season_of(d), "created_on": clock.today(), "status": "active"})
+    if watered and data.get("irrigation") != "rainfed":
+        _add("activities", {"date": watered, "crop": data["crop"], "plot_id": pid, "kind": "irrigation", "task_key": "", "qty": None, "unit": "", "note": "setup"})
+    return pid
 
 
 @app.post("/api/plots", status_code=201)
@@ -277,7 +284,8 @@ def put_farm(f: FarmIn):
 def onboard(o: OnboardIn):
     """Location + crops in one call: creates the farm profile and one plot per crop."""
     _save_farm(o)
-    ids = [_new_plot({"crop": c.crop, "area_acre": c.area_acre, "sowing_date": c.planted_on, "irrigation": c.irrigation, "note": ""})
+    ids = [_new_plot({"crop": c.crop, "area_acre": c.area_acre, "sowing_date": c.planted_on, "irrigation": c.irrigation, "note": "",
+                      "last_watered_on": c.last_watered_on})
            for c in o.crops]
     return {"plot_ids": ids}
 
