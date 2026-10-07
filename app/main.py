@@ -1,9 +1,12 @@
+import json
+import os
 from datetime import date
 from pathlib import Path
 from typing import Literal
 
 import httpx
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
@@ -11,6 +14,11 @@ from . import advice, crops, db, forecast, prices
 
 app = FastAPI(title="Farmer App", version="0.1.0")
 db.init()
+
+# Native (Capacitor) apps call a hosted API from these origins; override for your own domains.
+_origins = os.environ.get("FARMER_CORS_ORIGINS", "capacitor://localhost,http://localhost,https://localhost")
+app.add_middleware(CORSMiddleware, allow_origins=[o for o in _origins.split(",") if o],
+                   allow_methods=["GET", "POST", "DELETE"], allow_headers=["Content-Type"])
 
 Crop = str
 
@@ -166,6 +174,27 @@ def weather(lat: float = Query(ge=-90, le=90), lon: float = Query(ge=-180, le=18
         return r.json()["daily"]
     except (httpx.HTTPError, KeyError, ValueError) as ex:
         raise HTTPException(502, f"weather provider unavailable: {type(ex).__name__}")
+
+
+# ---- profit calculator / MSP -------------------------------------------
+class ProfitIn(BaseModel):
+    invested_per_acre: float = Field(gt=0, lt=1e8)
+    yield_q_per_acre: float = Field(gt=0, lt=1e5)
+    other_per_quintal: float = Field(0, ge=0, lt=1e7)
+    price: float = Field(gt=0, lt=1e7)
+    target_profit_per_acre: float | None = Field(None, ge=0, lt=1e9)
+
+
+@app.post("/api/calc/profit")
+def calc_profit(p: ProfitIn):
+    return advice.profit_calc(p.invested_per_acre, p.yield_q_per_acre, p.other_per_quintal,
+                              p.price, p.target_profit_per_acre)
+
+
+@app.get("/api/msp")
+def msp():
+    data = json.loads((Path(__file__).parent / "msp.json").read_text(encoding="utf-8"))
+    return {k: v for k, v in data.items() if not k.startswith("_")}
 
 
 # ---- fertilizer ----------------------------------------------------------

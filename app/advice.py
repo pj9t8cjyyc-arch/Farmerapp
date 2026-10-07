@@ -1,5 +1,6 @@
 """Rule-based advice: fertilizer plan, sell/hold, cost review."""
 from . import crops
+from .i18n import msg
 
 # Indian soil-test ratings for available nutrients (kg/ha): (low_below, high_above)
 RATING = {"n": (280, 560), "p": (10, 25), "k": (110, 280)}
@@ -27,16 +28,13 @@ def fertilizer_plan(crop: str, area_acre: float, soil_n=None, soil_p=None, soil_
     mop = need["k"] / MOP_K
     tips = []
     if soil_n is None and soil_p is None and soil_k is None:
-        tips.append("No soil test given: using the standard dose. A soil test (about Rs 100-300 at "
-                    "a KVK/state lab) usually cuts fertilizer cost by trimming nutrients the soil already has.")
+        tips.append(msg("fert.nosoil"))
     if ph is not None:
         if ph < 5.5:
-            tips.append("Soil is acidic (pH < 5.5): apply lime per local recommendation before fertilizer.")
+            tips.append(msg("fert.acid", "warn"))
         elif ph > 8.5:
-            tips.append("Soil is alkaline/sodic (pH > 8.5): consider gypsum and organic matter.")
-    tips.append("Split nitrogen into 2-3 doses (basal, vegetative, flowering) to reduce loss; "
-                "add farmyard manure/compost to improve uptake.")
-    tips.append("Doses are general guidelines, not a prescription; confirm with your local KVK/agri officer.")
+            tips.append(msg("fert.alk", "warn"))
+    tips += [msg("fert.split"), msg("fert.confirm")]
     return {"crop": crop, "area_acre": area_acre, "soil_ratings": ratings,
             "nutrient_kg": {k_: round(v, 1) for k_, v in need.items()},
             "products_kg": {"DAP": round(dap, 1), "Urea": round(urea, 1), "MOP": round(mop, 1)},
@@ -47,48 +45,73 @@ def sell_advice(crop: str, fc: dict, cost_per_quintal: float | None, current_pri
     out = []
     storable = crops.CROPS[crop][5]
     if fc.get("ok"):
-        ch = fc["expected_change_pct"]
-        mape = fc.get("backtest_mape_pct")
-        trust = "" if mape is None else f" (model error on last week: ~{mape}%)"
+        ch, mape = fc["expected_change_pct"], fc.get("backtest_mape_pct")
         if mape is not None and abs(ch) < mape:
-            out.append({"level": "info", "text": f"Forecast move ({ch:+.1f}%) is smaller than model error{trust}; "
-                        "no clear signal. Sell based on cash needs."})
+            out.append(msg("sell.no_signal", ch=ch, mape=mape))
         elif ch >= 3 and storable:
-            out.append({"level": "good", "text": f"Prices expected to rise {ch:+.1f}% in {fc['horizon_days']} days{trust}. "
-                        "Consider holding stock if you have safe storage and no urgent cash need."})
+            out.append(msg("sell.hold", "good", ch=ch, days=fc["horizon_days"]))
         elif ch >= 3:
-            out.append({"level": "info", "text": f"Rise of {ch:+.1f}% expected but {crop} is perishable; "
-                        "do not hold long."})
+            out.append(msg("sell.perishable", crop=crop, ch=ch))
         elif ch <= -3:
-            out.append({"level": "warn", "text": f"Prices expected to fall {ch:+.1f}%{trust}. Consider selling sooner."})
+            out.append(msg("sell.fall", "warn", ch=ch))
         else:
-            out.append({"level": "info", "text": f"Prices roughly flat ({ch:+.1f}%){trust}."})
+            out.append(msg("sell.flat", ch=ch))
     else:
-        out.append({"level": "info", "text": fc.get("reason", "Forecast unavailable")})
+        out.append(msg("sell.nofc"))
     if cost_per_quintal and current_price:
         if current_price < cost_per_quintal:
-            out.append({"level": "warn", "text": f"Current market price (Rs {current_price:.0f}/q) is below your cost "
-                        f"(Rs {cost_per_quintal:.0f}/q). Compare markets and consider MSP/storage options."})
+            out.append(msg("sell.below_cost", "warn", price=current_price, cost=cost_per_quintal))
         else:
-            m = (current_price - cost_per_quintal) / cost_per_quintal * 100
-            out.append({"level": "good", "text": f"Current price gives about {m:.0f}% margin over your cost."})
+            out.append(msg("sell.margin", "good",
+                           m=(current_price - cost_per_quintal) / cost_per_quintal * 100))
     return out
 
 
 def cost_review(by_cat: dict[str, float], total_cost: float) -> list[dict]:
-    out = []
     if total_cost <= 0:
-        return [{"level": "info", "text": "Add expenses to get cost insights."}]
+        return [msg("cost.none")]
     share = {c: v / total_cost * 100 for c, v in by_cat.items()}
+    out = []
     if share.get("fertilizer", 0) > 30:
-        out.append({"level": "warn", "text": f"Fertilizer is {share['fertilizer']:.0f}% of your cost. "
-                    "Get a soil test and use the fertilizer calculator to avoid over-application."})
+        out.append(msg("cost.fert", "warn", p=share["fertilizer"]))
     if share.get("pesticide", 0) > 20:
-        out.append({"level": "warn", "text": f"Pesticide is {share['pesticide']:.0f}% of cost; consider scouting-based "
-                    "spraying / IPM to cut sprays."})
+        out.append(msg("cost.pest", "warn", p=share["pesticide"]))
     if share.get("labour", 0) > 40:
-        out.append({"level": "info", "text": f"Labour is {share['labour']:.0f}% of cost; check if mechanisation or "
-                    "group hiring helps."})
-    if not out:
-        out.append({"level": "good", "text": "No single cost category looks unusually high."})
+        out.append(msg("cost.labour", p=share["labour"]))
+    return out or [msg("cost.ok", "good")]
+
+
+SMALL_PROFIT_ROI = 15.0  # ROI % below which a profit is flagged "small"
+
+
+def _status(profit_per_acre: float, invested: float) -> str:
+    if profit_per_acre < 0:
+        return "loss"
+    return "small" if profit_per_acre / invested * 100 < SMALL_PROFIT_ROI else "profit"
+
+
+def profit_calc(invested_per_acre: float, yield_q_per_acre: float, other_per_quintal: float,
+                price: float, target_profit_per_acre: float | None = None) -> dict:
+    """Per-acre profit calculator (all money in Rs, quantities in quintals)."""
+    def at(p: float) -> dict:
+        per_q = p - invested_per_acre / yield_q_per_acre - other_per_quintal
+        per_acre = per_q * yield_q_per_acre
+        return {"price": round(p, 2), "profit_per_quintal": round(per_q, 2),
+                "profit_per_acre": round(per_acre, 2),
+                "status": _status(per_acre, invested_per_acre)}
+
+    break_even = invested_per_acre / yield_q_per_acre + other_per_quintal
+    base = at(price)
+    prices = sorted({round(price * m / 50) * 50 for m in (0.75, 0.85, 1.1, 1.25)} - {round(price)})
+    scen = [{**at(p), "yours": False} for p in prices if p > 0]
+    scen.append({**base, "yours": True})
+    scen.sort(key=lambda r: r["price"])
+    out = {**base, "invested_per_acre": invested_per_acre, "yield_q_per_acre": yield_q_per_acre,
+           "other_per_quintal": other_per_quintal,
+           "revenue_per_acre": round(price * yield_q_per_acre, 2),
+           "roi_pct": round(base["profit_per_acre"] / invested_per_acre * 100, 1),
+           "break_even_price": round(break_even, 2), "scenarios": scen}
+    if target_profit_per_acre is not None:
+        out["price_for_target"] = round(
+            (invested_per_acre + target_profit_per_acre) / yield_q_per_acre + other_per_quintal, 2)
     return out

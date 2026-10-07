@@ -59,3 +59,39 @@ def test_fertilizer_math():
 def test_refresh_without_key_is_graceful():
     r = c.get("/api/prices/tomato?refresh=true").json()
     assert r["refresh"]["ok"] is False and r["source"] == "demo"
+
+
+def test_profit_calc_matches_worked_example():
+    r = c.post("/api/calc/profit", json={"invested_per_acre": 45000, "yield_q_per_acre": 30,
+                                         "price": 2410, "target_profit_per_acre": 20000}).json()
+    assert r["break_even_price"] == 1500 and r["profit_per_quintal"] == 910
+    assert r["profit_per_acre"] == 27300 and r["roi_pct"] == 60.7
+    assert round(r["price_for_target"]) == 2167 and r["status"] == "profit"
+    assert sum(s["yours"] for s in r["scenarios"]) == 1
+
+
+def test_profit_calc_loss_small_and_other_charges():
+    r = c.post("/api/calc/profit", json={"invested_per_acre": 45000, "yield_q_per_acre": 30,
+                                         "other_per_quintal": 100, "price": 1550}).json()
+    assert r["break_even_price"] == 1600 and r["status"] == "loss"
+    r = c.post("/api/calc/profit", json={"invested_per_acre": 45000, "yield_q_per_acre": 30, "price": 1600}).json()
+    assert r["status"] == "small"  # ROI 6.7% < 15%
+    assert c.post("/api/calc/profit", json={"invested_per_acre": 0, "yield_q_per_acre": 30, "price": 1}).status_code == 422
+
+
+def test_bilingual_advice_and_msp():
+    d = c.get("/api/dashboard?crop=chilli").json()
+    for m in d["sell_advice"] + d["cost_insights"]:
+        assert m["text"] and m["text_te"] and "{" not in m["text_te"]
+    f = c.post("/api/fertilizer/advice", json={"crop": "wheat", "area_acre": 1}).json()
+    assert all(t["text_te"] for t in f["tips"])
+    assert c.get("/api/msp").json()["maize"]["price"] == 2410
+
+
+def test_cors_for_native_app_and_static_assets():
+    h = {"Origin": "capacitor://localhost", "Access-Control-Request-Method": "POST"}
+    r = c.options("/api/calc/profit", headers=h)
+    assert r.headers.get("access-control-allow-origin") == "capacitor://localhost"
+    assert c.options("/api/calc/profit", headers={**h, "Origin": "https://evil.example"}).headers.get("access-control-allow-origin") is None
+    for f in ("/", "/app.js", "/i18n.js", "/sw.js", "/manifest.webmanifest", "/vendor/chart.umd.js"):
+        assert c.get(f).status_code == 200, f

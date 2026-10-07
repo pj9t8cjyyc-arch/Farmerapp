@@ -1,118 +1,61 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Farmer Dashboard</title>
-<style>
-:root{--bg:#f5f7f2;--card:#fff;--fg:#1d2a1d;--mut:#667;--ac:#2f7d32;--warn:#b26a00;--bad:#b3261e;--bd:#dde3d8}
-@media(prefers-color-scheme:dark){:root{--bg:#111611;--card:#1b231b;--fg:#e6efe6;--mut:#9aa89a;--ac:#6fcf73;--warn:#f0b04a;--bad:#ff8a80;--bd:#2c382c}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 system-ui,sans-serif}
-header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px}
-h1{font-size:20px;margin:0}main{padding:0 16px 32px;max-width:1100px;margin:auto}
-.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
-.kpi b{display:block;font-size:20px}.kpi span{color:var(--mut);font-size:12px}
-.two{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
-h2{font-size:15px;margin:0 0 8px}label{display:block;font-size:12px;color:var(--mut)}
-input,select,button{font:inherit;padding:6px 8px;border-radius:6px;border:1px solid var(--bd);background:var(--card);color:var(--fg);width:100%}
-button{background:var(--ac);color:#fff;border:0;cursor:pointer;margin-top:6px}button.s{width:auto;margin:0;padding:2px 8px;background:var(--bad)}
-form{display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}form button{grid-column:1/-1}
-.tip{padding:6px 8px;border-left:4px solid var(--mut);margin:4px 0;background:var(--bg);border-radius:4px}
-.good{border-color:var(--ac)}.warn{border-color:var(--warn)}.info{border-color:var(--mut)}
-.badge{padding:2px 8px;border-radius:99px;font-size:12px;background:var(--warn);color:#000}.badge.live{background:var(--ac);color:#fff}
-table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:4px;border-bottom:1px solid var(--bd);text-align:left}
-canvas{max-height:260px}.pos{color:var(--ac)}.neg{color:var(--bad)}
-</style></head><body>
-<header><h1>🌾 Farmer Dashboard</h1>
+<html lang="te"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2f7d32"><link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg"><link rel="apple-touch-icon" href="/icon.svg">
+<title>Farmer App</title><link rel="stylesheet" href="/style.css"></head><body>
+<header><h1>🌾 <span data-i="title"></span></h1>
 <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
-<div><label>Crop</label><select id="crop"></select></div>
-<div><button id="refresh" style="margin:0">Refresh live prices</button></div>
-<span id="src" class="badge"></span></div></header>
+<div class="seg" id="lang"><button data-l="te">తెలుగు</button><button data-l="en">English</button><button data-l="both">రెండూ · Both</button></div>
+<div><label data-i="crop"></label><select id="crop"></select></div>
+<button id="refresh" style="width:auto" data-i="refresh"></button><span id="src" class="badge"></span></div></header>
 <main>
 <div class="grid" id="kpis"></div>
-<div class="card"><h2>Price (Rs/quintal) &amp; 14-day forecast</h2><canvas id="priceChart"></canvas>
-<div id="fcinfo" style="color:var(--mut);font-size:12px"></div></div>
+
+<div class="card" id="calc"><h2 id="calcTitle"></h2>
+<div class="sec"><i class="dot blue"></i><span data-i="moneyOut"></span></div>
+<form id="fc" onsubmit="return false" style="grid-template-columns:1fr 1fr">
+<div><label data-i="invested"></label><input name="invested_per_acre" type="number" inputmode="decimal" min="0" step="any"></div>
+<div><label data-i="yieldQ"></label><input name="yield_q_per_acre" type="number" inputmode="decimal" min="0" step="any"></div>
+<div style="grid-column:1/-1"><label data-i="other"></label><input name="other_per_quintal" type="number" inputmode="decimal" min="0" step="any" value="0"></div>
+</form>
+<div class="sec"><i class="dot org"></i><span data-i="sellPrice"></span></div>
+<label data-i="sellPriceIn"></label><input id="price" type="number" inputmode="decimal" min="0" step="any">
+<input id="slider" type="range" min="500" max="30000" step="10" style="padding:0;margin-top:6px">
+<button id="useMsp" type="button" style="display:none;margin-top:8px;background:var(--card);color:var(--fg);border:1px solid var(--bd)"></button>
+<div id="calcOut"></div></div>
+
+<div class="card"><h2 data-i="priceChart"></h2><canvas id="priceChart"></canvas><div id="fcinfo" class="mut"></div></div>
+<div class="two"><div class="card"><h2 data-i="sell"></h2><div id="sell"></div></div>
+<div class="card"><h2 data-i="costIns"></h2><div id="cost"></div></div></div>
+<div class="two"><div class="card"><h2 data-i="byCat"></h2><canvas id="catChart"></canvas></div>
+<div class="card"><h2 data-i="byMonth"></h2><canvas id="monChart"></canvas></div></div>
+<div class="card"><h2 data-i="markets"></h2><div style="overflow-x:auto"><table id="mk"></table></div></div>
 <div class="two">
-<div class="card"><h2>Sell / hold advice</h2><div id="sell"></div></div>
-<div class="card"><h2>Cost insights</h2><div id="cost"></div></div></div>
+<div class="card"><h2 data-i="addExp"></h2><form id="fe">
+<div><label data-i="date"></label><input name="date" type="date" required></div>
+<div><label data-i="category"></label><select name="category"></select></div>
+<div><label data-i="amount"></label><input name="amount" type="number" inputmode="decimal" min="1" step="any" required></div>
+<div><label data-i="note"></label><input name="note" maxlength="200"></div><button data-i="save"></button></form></div>
+<div class="card"><h2 data-i="addSale"></h2><form id="fs">
+<div><label data-i="date"></label><input name="date" type="date" required></div>
+<div><label data-i="qty"></label><input name="qty_quintal" type="number" inputmode="decimal" min="0.01" step="any" required></div>
+<div><label data-i="pricePerQ"></label><input name="price_per_quintal" type="number" inputmode="decimal" min="1" step="any" required></div>
+<div><label data-i="market"></label><input name="market" maxlength="80"></div><button data-i="save"></button></form></div></div>
 <div class="two">
-<div class="card"><h2>Expenses by category</h2><canvas id="catChart"></canvas></div>
-<div class="card"><h2>Monthly expenses</h2><canvas id="monChart"></canvas></div></div>
-<div class="card"><h2>Today's market prices (best first)</h2><table id="mk"></table></div>
-<div class="two">
-<div class="card"><h2>Add expense</h2><form id="fe">
-<div><label>Date</label><input name="date" type="date" required></div>
-<div><label>Category</label><select name="category"></select></div>
-<div><label>Amount (Rs)</label><input name="amount" type="number" min="1" step="any" required></div>
-<div><label>Note</label><input name="note" maxlength="200"></div><button>Save expense</button></form></div>
-<div class="card"><h2>Record sale</h2><form id="fs">
-<div><label>Date</label><input name="date" type="date" required></div>
-<div><label>Quintals</label><input name="qty_quintal" type="number" min="0.01" step="any" required></div>
-<div><label>Rs / quintal</label><input name="price_per_quintal" type="number" min="1" step="any" required></div>
-<div><label>Market</label><input name="market" maxlength="80"></div><button>Save sale</button></form></div></div>
-<div class="two">
-<div class="card"><h2>Add plot</h2><form id="fp">
-<div><label>Area (acre)</label><input name="area_acre" type="number" min="0.01" step="any" required></div>
-<div><label>Sowing date</label><input name="sowing_date" type="date"></div><button>Save plot</button></form></div>
-<div class="card"><h2>Fertilizer calculator</h2><form id="ff">
-<div><label>Area (acre)</label><input name="area_acre" type="number" min="0.01" step="any" required></div>
-<div><label>Soil N kg/ha</label><input name="soil_n" type="number" min="0" step="any"></div>
-<div><label>Soil P kg/ha</label><input name="soil_p" type="number" min="0" step="any"></div>
-<div><label>Soil K kg/ha</label><input name="soil_k" type="number" min="0" step="any"></div>
-<div><label>Soil pH</label><input name="ph" type="number" min="0" max="14" step="any"></div>
-<button>Get plan</button></form><div id="fert"></div></div></div>
-<div class="card"><h2>Recent expenses</h2><table id="exp"></table></div>
-<div class="card"><h2>Recent sales</h2><table id="sal"></table></div>
+<div class="card"><h2 data-i="addPlot"></h2><form id="fp">
+<div><label data-i="area"></label><input name="area_acre" type="number" inputmode="decimal" min="0.01" step="any" required></div>
+<div><label data-i="sowing"></label><input name="sowing_date" type="date"></div><button data-i="save"></button></form></div>
+<div class="card"><h2 data-i="fert"></h2><form id="ff">
+<div><label data-i="area"></label><input name="area_acre" type="number" inputmode="decimal" min="0.01" step="any" required></div>
+<div><label data-i="soilN"></label><input name="soil_n" type="number" min="0" step="any"></div>
+<div><label data-i="soilP"></label><input name="soil_p" type="number" min="0" step="any"></div>
+<div><label data-i="soilK"></label><input name="soil_k" type="number" min="0" step="any"></div>
+<div><label data-i="ph"></label><input name="ph" type="number" min="0" max="14" step="any"></div>
+<button data-i="getPlan"></button></form><div id="fert"></div></div></div>
+<div class="card"><h2 data-i="recentExp"></h2><div style="overflow-x:auto"><table id="exp"></table></div></div>
+<div class="card"><h2 data-i="recentSales"></h2><div style="overflow-x:auto"><table id="sal"></table></div></div>
 </main>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script>
-const $=id=>document.getElementById(id),rs=n=>n==null?'–':'Rs '+Number(n).toLocaleString('en-IN',{maximumFractionDigits:0});
-const charts={};let crop;
-async function api(path,opt){const r=await fetch(path,opt);if(!r.ok){let m=r.statusText;try{m=JSON.stringify((await r.json()).detail)}catch{}throw new Error(m)}return r.json()}
-const post=(p,b)=>api(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
-function el(t,txt,cls){const e=document.createElement(t);if(txt!=null)e.textContent=txt;if(cls)e.className=cls;return e}
-function tips(box,list){box.replaceChildren(...list.map(t=>el('div',t.text,'tip '+t.level)))}
-function chart(id,cfg){charts[id]?.destroy();if(window.Chart)charts[id]=new Chart($(id),cfg)}
-function table(t,head,rows){t.replaceChildren();const h=el('tr');head.forEach(x=>h.append(el('th',x)));t.append(h);
- rows.forEach(r=>{const tr=el('tr');r.forEach(c=>{if(c instanceof Node){const td=el('td');td.append(c);tr.append(td)}else tr.append(el('td',c))});t.append(tr)})}
-function delBtn(url){const b=el('button','✕','s');b.onclick=async()=>{await api(url,{method:'DELETE'});load()};return b}
-async function load(refresh){
- crop=$('crop').value;
- const [d,p]=await Promise.all([api('/api/dashboard?crop='+crop),api(`/api/prices/${crop}?days=90${refresh?'&refresh=true':''}`)]);
- const s=$('src');s.textContent=p.source==='live'?'LIVE Agmarknet data':'DEMO data (not real prices)';s.className='badge '+(p.source==='live'?'live':'');
- s.title=p.note+(p.refresh&&!p.refresh.ok?' | live refresh: '+p.refresh.error:'');
- const k=[['Total cost',rs(d.total_cost)],['Revenue',rs(d.revenue)],['Profit',rs(d.profit),d.profit>=0?'pos':'neg'],
-  ['Cost / acre',rs(d.cost_per_acre)],['Cost / quintal',rs(d.cost_per_quintal)],['Avg sale price',rs(d.avg_sale_price)],['Market price now',rs(d.current_price)]];
- $('kpis').replaceChildren(...k.map(([a,b,c])=>{const x=el('div',null,'card kpi');x.append(el('b',b,c),el('span',a));return x}));
- const fc=d.forecast,n=p.dates.length,fd=[];
- if(fc.ok){const last=new Date(p.dates[n-1]);for(let i=1;i<=fc.horizon_days;i++){const x=new Date(last);x.setDate(x.getDate()+i);fd.push(x.toISOString().slice(0,10))}}
- const pad=a=>Array(n).fill(null).concat(a||[]),lab=p.dates.concat(fd);
- chart('priceChart',{type:'line',data:{labels:lab,datasets:[
-  {label:'Actual',data:p.prices.concat(fd.map(()=>null)),borderColor:'#2f7d32',pointRadius:0,tension:.2},
-  ...(fc.ok?[{label:'Forecast',data:pad(fc.forecast),borderColor:'#e08a00',borderDash:[6,4],pointRadius:0},
-  {label:'Upper',data:pad(fc.upper),borderColor:'transparent',backgroundColor:'rgba(224,138,0,.15)',pointRadius:0,fill:'+1'},
-  {label:'Lower',data:pad(fc.lower),borderColor:'transparent',pointRadius:0}]:[])]},
-  options:{responsive:true,interaction:{mode:'index',intersect:false},scales:{x:{ticks:{maxTicksLimit:8}}}}});
- $('fcinfo').textContent=fc.ok?`${fc.method}. Expected change ${fc.expected_change_pct}%; last-week backtest error ${fc.backtest_mape_pct??'n/a'}%. Band is a rough 95% range. Uses price history only.`:fc.reason;
- tips($('sell'),d.sell_advice);tips($('cost'),d.cost_insights);
- const cats=Object.keys(d.expense_by_category);
- chart('catChart',{type:'doughnut',data:{labels:cats,datasets:[{data:cats.map(c=>d.expense_by_category[c])}]}});
- chart('monChart',{type:'bar',data:{labels:d.monthly_expenses.map(m=>m.month),datasets:[{label:'Rs',data:d.monthly_expenses.map(m=>m.total),backgroundColor:'#2f7d32'}]},options:{plugins:{legend:{display:false}}}});
- table($('mk'),['State','Market','Modal','Min','Max'],d.markets_today.map(m=>[m.state,m.market,rs(m.modal),rs(m.lo),rs(m.hi)]));
- const [ex,sa]=await Promise.all([api('/api/expenses?crop='+crop),api('/api/sales?crop='+crop)]);
- table($('exp'),['Date','Category','Rs','Note',''],ex.slice(0,15).map(e=>[e.date,e.category,rs(e.amount),e.note,delBtn('/api/expenses/'+e.id)]));
- table($('sal'),['Date','Qty (q)','Rs/q','Market',''],sa.slice(0,15).map(e=>[e.date,e.qty_quintal,rs(e.price_per_quintal),e.market,delBtn('/api/sales/'+e.id)]));
-}
-function formData(f){const o={};new FormData(f).forEach((v,k)=>{if(v!=='')o[k]=isNaN(v)||k==='note'||k==='market'||k==='category'||k.includes('date')?v:Number(v)});return o}
-function wire(id,url,after){$(id).onsubmit=async e=>{e.preventDefault();try{const r=await post(url,{crop,...formData(e.target)});if(after)after(r);else{e.target.reset();load()}}catch(x){alert('Error: '+x.message)}}}
-wire('fe','/api/expenses');wire('fs','/api/sales');wire('fp','/api/plots');
-wire('ff','/api/fertilizer/advice',r=>{const b=$('fert');b.replaceChildren(
- el('div',`Soil ratings N/P/K: ${r.soil_ratings.n}/${r.soil_ratings.p}/${r.soil_ratings.k}`,'tip info'),
- el('div',`Nutrients needed (kg): N ${r.nutrient_kg.n}, P2O5 ${r.nutrient_kg.p}, K2O ${r.nutrient_kg.k}`,'tip info'),
- el('div',`Products: DAP ${r.products_kg.DAP} kg, Urea ${r.products_kg.Urea} kg, MOP ${r.products_kg.MOP} kg`,'tip good'),
- ...r.tips.map(t=>el('div',t,'tip')))});
-$('crop').onchange=()=>load();$('refresh').onclick=()=>load(true).catch(e=>alert(e.message));
-(async()=>{const m=await api('/api/meta');
- $('crop').replaceChildren(...m.crops.map(c=>el('option',c)));
- document.querySelector('#fe [name=category]').replaceChildren(...m.categories.map(c=>el('option',c)));
- document.querySelectorAll('input[type=date]').forEach(i=>{if(i.name==='date')i.value=new Date().toISOString().slice(0,10)});
- load().catch(e=>alert(e.message))})();
-</script></body></html>
+<script src="/config.js"></script><script src="/i18n.js"></script>
+<script src="/vendor/chart.umd.js"></script><script src="/app.js"></script>
+</body></html>
