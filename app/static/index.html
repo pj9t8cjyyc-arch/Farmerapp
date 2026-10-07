@@ -12,6 +12,7 @@
       <div class="seg" id="lang" role="group" aria-label="Language">
         <button data-l="te" aria-label="తెలుగు">తె</button><button data-l="en" aria-label="English">EN</button><button data-l="both" aria-label="Both">తె·EN</button>
       </div>
+      <button id="acct" class="ico" type="button" aria-label="Account" title="Account" hidden>👤</button>
       <button id="refresh" class="ico" type="button" aria-label="Refresh live prices" title="Refresh live prices">⟳</button>
     </div>
   </div>
@@ -40,7 +41,7 @@
 
   <section class="card" id="calc" data-t="profit"><h2 id="calcTitle"></h2>
     <div class="sec"><i class="dot blue"></i><span data-i="moneyOut"></span></div>
-    <form id="fc" onsubmit="return false" class="pair">
+    <form id="fc" class="pair">
       <div><label data-i="invested"></label><input name="invested_per_acre" type="number" inputmode="decimal" min="0" step="any"></div>
       <div><label data-i="yieldQ"></label><input name="yield_q_per_acre" type="number" inputmode="decimal" min="0" step="any"></div>
       <div class="full"><label data-i="other"></label><input name="other_per_quintal" type="number" inputmode="decimal" min="0" step="any" value="0"></div>
@@ -106,5 +107,5 @@
 <div id="wizard" class="wizard" hidden role="dialog" aria-modal="true"></div>
 <div id="toast" class="toast" hidden></div>
 <script src="/config.js"></script><script src="/i18n.js"></script>
-<script src="/vendor/chart.umd.js"></script><script src="/wizard.js"></script><script src="/app.js"></script>
+<script src="/vendor/chart.umd.js"></script><script src="/wizard.js"></script><script src="/auth.js"></script><script src="/app.js"></script>
 </body></html>

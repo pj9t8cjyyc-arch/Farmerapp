@@ -1,6 +1,6 @@
 // Offline shell: static files cache-first (updated in background); /api network-first.
-const CACHE = "farmer-v3";
-const SHELL = ["/", "/style.css", "/app.js", "/i18n.js", "/wizard.js", "/config.js", "/vendor/chart.umd.js", "/icon.svg", "/manifest.webmanifest"];
+const CACHE = "farmer-v4";
+const SHELL = ["/", "/style.css", "/app.js", "/i18n.js", "/wizard.js", "/auth.js", "/config.js", "/vendor/chart.umd.js", "/icon.svg", "/manifest.webmanifest"];
 self.addEventListener("install", e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener("activate", e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener("fetch", e => {

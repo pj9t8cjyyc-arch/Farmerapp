@@ -13,11 +13,17 @@ const TABS = [["sum", "tSum", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7
   ["money", "tMoney", "M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 10h18M16 15h2"]];
 const KIND_EM = {irrigation: "💧", fertilizer: "🧪", harvest: "🌾", setup: "📝"};
 
-async function api(path, opt) {
-  const r = await fetch(BASE + path, opt);
-  if (!r.ok) { let m = r.statusText; try { m = JSON.stringify((await r.json()).detail); } catch {} throw new Error(m); }
+async function api(path, opt = {}) {
+  const tok = store.get("token");
+  const r = await fetch(BASE + path, {...opt, headers: {...(opt.headers || {}), ...(tok ? {Authorization: "Bearer " + tok} : {})}});
+  if (r.status === 401 && !path.startsWith("/api/auth/")) { store.set("token", ""); openLogin(); const e = new Error("login required"); e.status = 401; throw e; }
+  if (!r.ok) {
+    let m = r.statusText; try { const d = (await r.json()).detail; m = typeof d === "string" ? d : JSON.stringify(d); } catch {}
+    const e = new Error(m); e.status = r.status; throw e;
+  }
   return r.json();
 }
+const oops = e => { if (e.message !== "login required") oops(e); };
 const post = (p, b) => api(p, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(b)});
 function el(t, txt, cls) { const e = document.createElement(t); if (txt != null) e.textContent = txt; if (cls) e.className = cls; return e; }
 const pk = (en, te) => LANG === "en" ? en : LANG === "te" ? te : te + "\n" + en;       // two lines in "both" mode
@@ -74,7 +80,7 @@ async function go(v, dir) {
     setView(v); await load(); window.scrollTo({top: 0});
     const m = $("main"); m.classList.remove("swap-l", "swap-r"); void m.offsetWidth; if (dir) m.classList.add(dir > 0 ? "swap-l" : "swap-r");
     if (crop) calcRun();
-  } catch (e) { alert(L("errPrefix") + ": " + e.message); }
+  } catch (e) { oops(e); }
 }
 const order = () => ["today", "all", ...cropKeys()];
 function step(dir) {  // swipe / arrows: Today -> All -> crop 1 -> crop 2 -> ... -> Today
@@ -164,7 +170,7 @@ async function doAction(t) {
     const r = await post("/api/activities", {crop: t.crop, plot_id: t.plot_id, kind: a.kind, task_key: a.task_key || "", qty: a.qty ?? null, unit: a.unit || ""});
     toast(L("saved") + " ✓", a.kind === "harvest" ? null : async () => { await api("/api/activities/" + r.id, {method: "DELETE"}); load(); });
     await load();
-  } catch (e) { alert(L("errPrefix") + ": " + e.message); }
+  } catch (e) { oops(e); }
 }
 function renderToday() {
   const T = S.today, ov = S.ov; if (!T || !ov) return;
@@ -201,7 +207,7 @@ async function logActivity(body, undoable = true) {
     const r = await post("/api/activities", body);
     toast(L("saved") + " ✓", undoable ? async () => { await api("/api/activities/" + r.id, {method: "DELETE"}); load(); } : null);
     await load();
-  } catch (e) { alert(L("errPrefix") + ": " + e.message); }
+  } catch (e) { oops(e); }
 }
 function renderPlan() {
   const P = S.plan, ids = ["planBanner", "planTasks", "irrig", "fertSched", "stages", "planTips", "guideline"];
@@ -471,14 +477,14 @@ function wire(id, url, after) {
   $(id).onsubmit = async e => {
     e.preventDefault();
     try { const r = await post(url, {crop, ...formData(e.target)}); if (after) { after(r); render(); } else { e.target.reset(); setDates(); load(); } }
-    catch (x) { alert(L("errPrefix") + ": " + x.message); }
+    catch (x) { oops(x); }
   };
 }
 function setDates() { document.querySelectorAll("input[name=date]").forEach(i => { if (!i.value) i.value = new Date().toISOString().slice(0, 10); }); }
 wire("fe", "/api/expenses"); wire("fs", "/api/sales"); wire("ff", "/api/fertilizer/advice", r => S.fert = r);
 document.querySelectorAll("#lang button").forEach(b => b.onclick = () => { setLang(b.dataset.l); render(); });
 document.querySelectorAll("#moneySeg button").forEach(b => b.onclick = () => { moneyMode = b.dataset.m; render(); });
-$("refresh").onclick = () => load(true).catch(e => alert(e.message));
+$("refresh").onclick = () => load(true).catch(oops);
 $("fc").addEventListener("input", calcRun);
 $("price").addEventListener("input", () => { $("slider").value = $("price").value; calcRun(); });
 $("slider").addEventListener("input", () => { $("price").value = $("slider").value; calcRun(); });
@@ -501,8 +507,13 @@ document.addEventListener("keydown", e => {
   if (!$("wizard").hidden || e.target.closest("input,select,textarea") || e.altKey || e.ctrlKey || e.metaKey) return;
   if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1);
 });
-(async () => {
+$("acct").onclick = () => openAccount();
+let swRegistered = false;
+async function boot() {
   try {
+    S.auth = await api("/api/auth/config");
+    $("acct").hidden = !S.auth.required;
+    if (S.auth.required && !store.get("token")) { openLogin(); return; }
     let districts;
     [meta, S.msp, S.ov, S.farm, districts] = await Promise.all([api("/api/meta"), api("/api/msp"), api("/api/overview"), api("/api/farm"), api("/api/districts")]);
     WZ.districts = districts;
@@ -512,6 +523,8 @@ document.addEventListener("keydown", e => {
     render(); setDates();
     if (!S.farm.onboarded && !store.get("skipSetup")) openWizard("first");
     await load(); if (crop) calcRun();
-  } catch (e) { alert(L("errPrefix") + ": " + e.message); }
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
-})();
+  } catch (e) { oops(e); }
+  if (!swRegistered && "serviceWorker" in navigator) { swRegistered = true; navigator.serviceWorker.register("/sw.js").catch(() => {}); }
+}
+$("fc").addEventListener("submit", e => e.preventDefault());
+boot();

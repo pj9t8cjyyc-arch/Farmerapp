@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 os.environ["FARMER_DB"] = os.path.join(tempfile.mkdtemp(), "preview.db")
 os.environ.pop("DATA_GOV_API_KEY", None)
+os.environ["FARMER_AUTH"] = "off"            # the preview is a single sample farmer
 os.environ["FARMER_SAMPLE_WEATHER"] = "1"   # offline sample weather (labelled "sample" in the UI)
 sys.path.insert(0, str(ROOT))
 
@@ -53,7 +54,7 @@ snap = {}
 def grab(path):
     r = c.get(path); assert r.status_code == 200, path
     snap[path] = r.json()
-for p in ("/api/meta", "/api/msp", "/api/overview", "/api/dashboard", "/api/expenses", "/api/sales", "/api/farm", "/api/districts", "/api/today"):
+for p in ("/api/meta", "/api/msp", "/api/overview", "/api/dashboard", "/api/expenses", "/api/sales", "/api/farm", "/api/districts", "/api/today", "/api/auth/config", "/api/auth/me"):
     grab(p)
 for k in SEED:
     for p in (f"/api/dashboard?crop={k}", f"/api/expenses?crop={k}", f"/api/sales?crop={k}", f"/api/plots?crop={k}", f"/api/prices/{k}?days=90", f"/api/plan/{k}"):
@@ -102,6 +103,9 @@ window.fetch = (u, o = {}) => {
   if (path === "/api/calc/profit") return reply(profit(JSON.parse(o.body)));
   if (path === "/api/fertilizer/advice") return reply(fert(JSON.parse(o.body)));
   if (path === "/api/onboard") return reply({plot_ids: []});
+  if (path === "/api/auth/request") return reply({ok: true, cooldown_s: 30, dev_code: "123456"});
+  if (path === "/api/auth/verify") return JSON.parse(o.body).code === "123456" ? reply({token: "preview", farmer: {id: 1, phone: "+919876543210"}, new: false}) : reply("Wrong code.", false);
+  if (path === "/api/auth/logout") return reply({ok: true});
   if (path === "/api/farm") return reply(D["/api/farm"]);
   toast("Preview only: saving is turned off here"); return reply("Preview only: saving is turned off", false);
 };
@@ -119,12 +123,15 @@ out = f"""<title>Farmer App</title>
 .pv{{background:var(--ac-soft);color:var(--fg);font-size:12px;text-align:center;padding:4px 8px}}
 .pv button{{width:auto;min-height:0;padding:1px 10px;margin-left:8px;font-size:12px}}</style>
 <div class="pv">Preview with sample farm data and sample weather. Saving is turned off here.
-<button type="button" onclick="openWizard('first')">Try first-time setup</button></div>
+<button type="button" onclick="openWizard('first')">Try first-time setup</button>
+<button type="button" onclick="S.auth={{required:true,channels:['whatsapp','sms'],dev:true}};openLogin()">Try sign-in (code 123456)</button>
+<button type="button" onclick="openAccount()">Account menu</button></div>
 {body}
 <script>{SHIM}</script>
 <script>{(static / "i18n.js").read_text(encoding="utf-8")}</script>
 <script src="{chart_src}"></script>
 <script>{(static / "wizard.js").read_text(encoding="utf-8")}</script>
+<script>{(static / "auth.js").read_text(encoding="utf-8")}</script>
 <script>{(static / "app.js").read_text(encoding="utf-8")}</script>
 """
 Path(sys.argv[1]).write_text(out, encoding="utf-8")

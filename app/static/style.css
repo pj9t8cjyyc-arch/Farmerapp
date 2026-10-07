@@ -179,3 +179,10 @@ button.cc .prog{margin-top:4px}
 .tip .bi-en,.alert .bi-en{margin-top:3px}
 .task .what{white-space:normal}
 .sched.compact{padding:6px 0}.sched.compact .tag{margin:0}
+
+/* sign-in */
+.phone{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}.phone b{font-size:22px}
+.phone input{font-size:24px;letter-spacing:.06em;min-height:58px}
+input.otp{font-size:32px;letter-spacing:.45em;text-align:center;min-height:64px;font-variant-numeric:tabular-nums}
+.wz .opt.danger,.wz .go.danger{border-color:var(--bad);color:var(--bad)}.wz .go.danger{background:var(--bad);color:#fff}
+.wz label{font-size:14px}
