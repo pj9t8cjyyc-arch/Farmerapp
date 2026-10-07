@@ -16,16 +16,26 @@ def _rate(nutrient: str, v: float | None) -> str:
     return "low" if v < lo else "high" if v > hi else "medium"
 
 
-def fertilizer_plan(crop: str, area_acre: float, soil_n=None, soil_p=None, soil_k=None,
-                    ph=None) -> dict:
+def nutrient_need(crop: str, area_acre: float, soil_n=None, soil_p=None, soil_k=None) -> tuple[dict, dict]:
+    """Total N, P2O5, K2O (kg) for the area, adjusted by soil-test ratings. Returns (need_kg, ratings)."""
     _, _, n, p, k, _ = crops.CROPS[crop]
     ratings = {"n": _rate("n", soil_n), "p": _rate("p", soil_p), "k": _rate("k", soil_k)}
     ha = area_acre / ACRE_PER_HA
-    need = {"n": n * FACTOR[ratings["n"]] * ha, "p": p * FACTOR[ratings["p"]] * ha,
-            "k": k * FACTOR[ratings["k"]] * ha}
-    dap = need["p"] / DAP_P
-    urea = max(need["n"] - dap * DAP_N, 0) / UREA_N
-    mop = need["k"] / MOP_K
+    return {"n": n * FACTOR[ratings["n"]] * ha, "p": p * FACTOR[ratings["p"]] * ha,
+            "k": k * FACTOR[ratings["k"]] * ha}, ratings
+
+
+def products_for(n_kg: float, p_kg: float, k_kg: float) -> dict:
+    """Fertilizer products (kg) that supply the nutrients: DAP for P (it also carries 18% N), urea for the rest of N, MOP for K."""
+    dap = p_kg / DAP_P
+    return {"DAP": dap, "Urea": max(n_kg - dap * DAP_N, 0) / UREA_N, "MOP": k_kg / MOP_K}
+
+
+def fertilizer_plan(crop: str, area_acre: float, soil_n=None, soil_p=None, soil_k=None,
+                    ph=None) -> dict:
+    need, ratings = nutrient_need(crop, area_acre, soil_n, soil_p, soil_k)
+    prod = products_for(need["n"], need["p"], need["k"])
+    dap, urea, mop = prod["DAP"], prod["Urea"], prod["MOP"]
     tips = []
     if soil_n is None and soil_p is None and soil_k is None:
         tips.append(msg("fert.nosoil"))

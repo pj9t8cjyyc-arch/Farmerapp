@@ -1,6 +1,8 @@
+import asyncio
 import json
 import os
-from datetime import date
+from contextlib import asynccontextmanager
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Literal
 
@@ -10,9 +12,32 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
-from . import advice, crops, db, forecast, prices
+from . import advice, clock, crops, db, engine, forecast, places, prices
+from . import weather as wx
 
-app = FastAPI(title="Farmer App", version="0.1.0")
+_Date = date  # alias: a model field called "date" would shadow the type inside its own class body
+REFRESH_MINUTES = int(os.environ.get("FARMER_REFRESH_MINUTES", "180"))
+
+
+async def _refresh_prices_forever():
+    """Real-time prices: when a data.gov.in key is set, pull fresh mandi prices for every crop the farmer grows."""
+    while True:
+        with db.conn() as c:
+            grown = [r["crop"] for r in c.execute("SELECT DISTINCT crop FROM plots WHERE status='active'")]
+        for k in grown:
+            await asyncio.to_thread(prices.refresh_live, k)
+        await asyncio.sleep(REFRESH_MINUTES * 60)
+
+
+@asynccontextmanager
+async def lifespan(_app):
+    task = asyncio.create_task(_refresh_prices_forever()) if os.environ.get("DATA_GOV_API_KEY") else None
+    yield
+    if task:
+        task.cancel()
+
+
+app = FastAPI(title="Farmer App", version="0.2.0", lifespan=lifespan)
 db.init()
 
 # Native (Capacitor) apps call a hosted API from these origins; override for your own domains.
@@ -55,10 +80,54 @@ class SaleIn(_Base):
     market: str = Field("", max_length=80)
 
 
+Water = Literal["rainfed", "borewell", "canal", "drip"]
+
+
 class PlotIn(_Base):
     area_acre: float = Field(gt=0, lt=1e5)
-    sowing_date: date | None = None
+    sowing_date: date | None = None  # planting date: sowing, or transplanting for transplanted crops
+    irrigation: Water = "borewell"
+    soil_n: float | None = Field(None, ge=0, le=5000)
+    soil_p: float | None = Field(None, ge=0, le=1000)
+    soil_k: float | None = Field(None, ge=0, le=5000)
+    ph: float | None = Field(None, ge=0, le=14)
     note: str = Field("", max_length=200)
+
+
+class PlotPatch(BaseModel):
+    area_acre: float | None = Field(None, gt=0, lt=1e5)
+    sowing_date: date | None = None
+    irrigation: Water | None = None
+    soil_n: float | None = Field(None, ge=0, le=5000)
+    soil_p: float | None = Field(None, ge=0, le=1000)
+    soil_k: float | None = Field(None, ge=0, le=5000)
+    ph: float | None = Field(None, ge=0, le=14)
+
+
+class ActivityIn(_Base):
+    kind: Literal["irrigation", "fertilizer", "spray", "harvest", "other"]
+    date: _Date | None = None
+    plot_id: int | None = None
+    task_key: str = Field("", max_length=40)
+    qty: float | None = Field(None, ge=0, lt=1e7)
+    unit: str = Field("", max_length=12)
+    note: str = Field("", max_length=200)
+
+
+class FarmIn(BaseModel):
+    district: str = Field("", max_length=60)
+    lat: float | None = Field(None, ge=-90, le=90)
+    lon: float | None = Field(None, ge=-180, le=180)
+
+
+class OnboardCrop(_Base):
+    area_acre: float = Field(gt=0, lt=1e5)
+    planted_on: date | None = None
+    irrigation: Water = "borewell"
+
+
+class OnboardIn(FarmIn):
+    crops: list[OnboardCrop] = Field(min_length=1, max_length=12)
 
 
 class FertIn(_Base):
@@ -129,9 +198,36 @@ def del_sale(id_: int):
     return _delete("sales", id_)
 
 
+def _new_plot(data: dict) -> int:
+    d = clock.parse(str(data["sowing_date"])) if data.get("sowing_date") else None
+    return _add("plots", {**data, "season": clock.season_of(d), "created_on": clock.today(), "status": "active"})
+
+
 @app.post("/api/plots", status_code=201)
 def add_plot(p: PlotIn):
-    return {"id": _add("plots", p.model_dump())}
+    return {"id": _new_plot(p.model_dump())}
+
+
+@app.patch("/api/plots/{id_}")
+def patch_plot(id_: int, p: PlotPatch):
+    data = p.model_dump(exclude_unset=True)
+    if not data:
+        raise HTTPException(422, "nothing to change")
+    if "sowing_date" in data:
+        data["season"] = clock.season_of(data["sowing_date"])
+    with db.conn() as c:
+        sets = ",".join(f"{k}=?" for k in data)
+        if c.execute(f"UPDATE plots SET {sets} WHERE id=?", [str(v) if isinstance(v, date) else v for v in data.values()] + [id_]).rowcount == 0:
+            raise HTTPException(404, "not found")
+    return {"updated": id_}
+
+
+@app.post("/api/plots/{id_}/harvest")
+def harvest_plot(id_: int):
+    with db.conn() as c:
+        if c.execute("UPDATE plots SET status='harvested', harvested_on=? WHERE id=?", (clock.today().isoformat(), id_)).rowcount == 0:
+            raise HTTPException(404, "not found")
+    return {"harvested": id_}
 
 
 @app.get("/api/plots")
@@ -144,6 +240,116 @@ def list_plots(crop: str | None = None):
 @app.delete("/api/plots/{id_}")
 def del_plot(id_: int):
     return _delete("plots", id_)
+
+
+# ---- farm profile, one-minute onboarding, activity log ----------------------
+def _farm() -> dict:
+    rows = _rows("SELECT district, lat, lon, onboarded FROM farm WHERE id=1")
+    f = rows[0] if rows else {"district": "", "lat": None, "lon": None, "onboarded": 0}
+    f["onboarded"] = bool(f["onboarded"]) or bool(_rows("SELECT 1 FROM plots LIMIT 1"))
+    return f
+
+
+def _save_farm(f: FarmIn):
+    with db.conn() as c:
+        c.execute("INSERT INTO farm (id, district, lat, lon, onboarded) VALUES (1,?,?,?,1) "
+                  "ON CONFLICT(id) DO UPDATE SET district=excluded.district, lat=excluded.lat, lon=excluded.lon, onboarded=1",
+                  (f.district, f.lat, f.lon))
+
+
+@app.get("/api/districts")
+def districts():
+    return places.listing()
+
+
+@app.get("/api/farm")
+def get_farm():
+    return _farm()
+
+
+@app.put("/api/farm")
+def put_farm(f: FarmIn):
+    _save_farm(f)
+    return _farm()
+
+
+@app.post("/api/onboard", status_code=201)
+def onboard(o: OnboardIn):
+    """Location + crops in one call: creates the farm profile and one plot per crop."""
+    _save_farm(o)
+    ids = [_new_plot({"crop": c.crop, "area_acre": c.area_acre, "sowing_date": c.planted_on, "irrigation": c.irrigation, "note": ""})
+           for c in o.crops]
+    return {"plot_ids": ids}
+
+
+@app.post("/api/activities", status_code=201)
+def add_activity(a: ActivityIn):
+    d = a.model_dump()
+    d["date"] = d["date"] or clock.today()
+    if a.kind == "harvest" and a.plot_id:
+        harvest_plot(a.plot_id)
+    return {"id": _add("activities", d)}
+
+
+@app.get("/api/activities")
+def list_activities(crop: str | None = None, kind: str | None = None):
+    q, args = "SELECT * FROM activities WHERE 1=1", []
+    if crop:
+        q += " AND crop=?"; args.append(_crop(crop))
+    if kind:
+        q += " AND kind=?"; args.append(kind)
+    return _rows(q + " ORDER BY date DESC, id DESC", args)
+
+
+@app.delete("/api/activities/{id_}")
+def del_activity(id_: int):
+    return _delete("activities", id_)
+
+
+# ---- Today screen and crop plan ----------------------------------------------
+def _weather_for_farm() -> tuple[dict, dict]:
+    farm = _farm()
+    return farm, wx.get(farm["lat"], farm["lon"])
+
+
+def _weather_public(w: dict, today: date) -> dict:
+    if not w.get("ok"):
+        return {"ok": False, "error": w.get("error")}
+    days = [d for d in w["days"] if d["date"] >= (today - timedelta(1)).isoformat()]
+    return {"ok": True, "source": w["source"], "fetched_at": w["fetched_at"], "stale": bool(w.get("stale")),
+            "current": w["current"], "days": days}
+
+
+@app.get("/api/today")
+def today_view():
+    t = clock.today()
+    farm, w = _weather_for_farm()
+    plots = _rows("SELECT * FROM plots WHERE status='active' ORDER BY id")
+    acts = _rows("SELECT * FROM activities")
+    tasks, states = [], []
+    for p in plots:
+        tasks += engine.tasks_for_plot(p, acts, w, t)
+        states.append(engine.plot_state(p, t))
+    shown = [x for x in engine.sort_tasks(tasks) if x["urgency"] != "later"]
+    return {"as_of": clock.now().isoformat(timespec="seconds"), "farm": farm, "weather": _weather_public(w, t),
+            "alerts": engine.alerts(w, farm["lat"] is not None, t), "tasks": shown, "plots": states}
+
+
+@app.get("/api/plan/{crop}")
+def plan(crop: str, plot_id: int | None = None):
+    k = _crop(crop)
+    t = clock.today()
+    rows = _rows("SELECT * FROM plots WHERE crop=? AND status='active' ORDER BY id DESC", (k,))
+    p = next((r for r in rows if r["id"] == plot_id), rows[0] if rows else None) if rows else None
+    if not p:
+        return {"plot": None, "crop": k}
+    farm, w = _weather_for_farm()
+    acts = _rows("SELECT * FROM activities WHERE crop=?", (k,))
+    return {"plot": p, "crop": k, "state": engine.plot_state(p, t),
+            "tasks": engine.sort_tasks(engine.tasks_for_plot(p, acts, w, t)),
+            "irrigation": engine.irrigation_status(p, acts, w, t), "calendar": engine.calendar(p, acts, t),
+            "tips": engine.tips(k), "reviewed": engine.KB[k]["reviewed"], "weather": _weather_public(w, t),
+            "plots": [{"id": r["id"], "area_acre": r["area_acre"], "sowing_date": r["sowing_date"]} for r in rows]}
 
 
 # ---- prices / forecast / weather ----------------------------------------

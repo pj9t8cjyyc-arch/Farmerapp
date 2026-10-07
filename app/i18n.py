@@ -64,6 +64,72 @@ M = {  # code: (English, Telugu)
     "fert.split": (
         "Split nitrogen into 2-3 doses (basal, vegetative, flowering) to cut losses; add farmyard manure or compost.",
         "నత్రజనిని 2–3 దఫాలుగా (ప్రాథమిక, పెరుగుదల, పూత దశలో) వేయండి; పశువుల ఎరువు లేదా కంపోస్ట్ కలపండి."),
+    "t.irrigate_now": (
+        "Water your {crop} today. Soil water deficit is about {d} mm (limit {t} mm).",
+        "{crop}కు ఈరోజు నీరు పెట్టండి. నేలలో నీటి లోటు సుమారు {d} మి.మీ (పరిమితి {t} మి.మీ)."),
+    "t.irrigate_soon": (
+        "Water your {crop} around {date} (in about {n} days).",
+        "{crop}కు {date} నాటికి (సుమారు {n} రోజుల్లో) నీరు పెట్టండి."),
+    "t.irrigate_ok": (
+        "No watering needed now for {crop}: deficit {d} of {t} mm; next watering around {date}.",
+        "{crop}కు ఇప్పుడు నీరు అవసరం లేదు: లోటు {d}/{t} మి.మీ; తదుపరి నీరు సుమారు {date}."),
+    "t.irrigate_ok2": (
+        "No watering needed now for {crop}: deficit {d} of {t} mm.",
+        "{crop}కు ఇప్పుడు నీరు అవసరం లేదు: లోటు {d}/{t} మి.మీ."),
+    "t.irrigate_fallback": (
+        "Live weather is unavailable. {crop} was last watered {n} days ago; the usual gap is about {g} days.",
+        "ప్రత్యక్ష వాతావరణం అందుబాటులో లేదు. {crop}కు చివరిగా {n} రోజుల క్రితం నీరు పెట్టారు; సాధారణ వ్యవధి సుమారు {g} రోజులు."),
+    "t.irrigate_fallback_now": (
+        "Live weather is unavailable. {crop} was last watered {n} days ago (usual gap about {g} days): check the soil and water if dry.",
+        "ప్రత్యక్ష వాతావరణం అందుబాటులో లేదు. {crop}కు చివరిగా {n} రోజుల క్రితం నీరు పెట్టారు (సాధారణ వ్యవధి సుమారు {g} రోజులు): నేల చూసి ఎండి ఉంటే నీరు పెట్టండి."),
+    "t.irrigate_never": (
+        "No watering recorded yet for {crop}. Tap 'Watered' every time you irrigate so the advice stays accurate.",
+        "{crop}కు ఇంకా నీరు పెట్టిన నమోదు లేదు. ప్రతిసారి నీరు పెట్టినప్పుడు 'నీరు పెట్టాను' నొక్కండి, అప్పుడు సలహా కచ్చితంగా ఉంటుంది."),
+    "t.rainfed_dry": (
+        "{crop} is rain-fed and the soil water deficit is {d} mm. If you have any water source, a protective watering will help.",
+        "{crop} వర్షాధారం, నేలలో నీటి లోటు {d} మి.మీ. ఏదైనా నీటి వనరు ఉంటే రక్షణ నీరు ఇవ్వడం మంచిది."),
+    "t.rainfed_ok": (
+        "{crop} is rain-fed. Soil water deficit is {d} mm, which is fine for now.",
+        "{crop} వర్షాధారం. నేలలో నీటి లోటు {d} మి.మీ, ప్రస్తుతానికి పర్వాలేదు."),
+    "t.ponded": (
+        "Keep 2-5 cm of water in the {crop} field now; drain it about {n} days before harvest.",
+        "{crop} పొలంలో ఇప్పుడు 2-5 సెం.మీ. నీరు ఉంచండి; కోతకు సుమారు {n} రోజుల ముందు నీరు తీసేయండి."),
+    "t.fert_due": (
+        "Apply {label} on {crop} now ({window}): {products}.",
+        "{crop}కు ఇప్పుడు {label} వేయండి ({window}): {products}."),
+    "t.fert_soon": (
+        "{label} for {crop} is coming up ({window}): {products}.",
+        "{crop}కు {label} త్వరలో ({window}): {products}."),
+    "t.fert_overdue": (
+        "{label} for {crop} is overdue (was due {window}). If not done yet, apply now: {products}.",
+        "{crop}కు {label} ఆలస్యమైంది ({window}). ఇంకా వేయకపోతే ఇప్పుడే వేయండి: {products}."),
+    "t.fert_later": (
+        "{label} for {crop} ({window}): {products}.",
+        "{crop}కు {label} ({window}): {products}."),
+    "t.harvest_soon": (
+        "{crop} harvest window opens around {date}. Check market prices and arrange labour and transport.",
+        "{crop} కోత సుమారు {date} నుంచి మొదలవుతుంది. మార్కెట్ ధరలు చూసి, కూలీలు, రవాణా ఏర్పాటు చేసుకోండి."),
+    "t.harvest_now": (
+        "{crop} is in its harvest window (from about {date}). Harvest when the crop is ready, then tap 'Harvested'.",
+        "{crop} కోత సమయంలో ఉంది (సుమారు {date} నుంచి). పంట సిద్ధంగా ఉన్నప్పుడు కోయండి, తర్వాత 'కోశాను' నొక్కండి."),
+    "t.stop_irrigation": (
+        "Stop watering {crop} from about {date}, before harvest.",
+        "కోతకు ముందు {crop}కు సుమారు {date} నుంచి నీరు ఆపండి."),
+    "t.set_date": (
+        "Set the planting date for {crop} to get your plan.",
+        "ప్రణాళిక కోసం {crop} నాటిన తేదీ నమోదు చేయండి."),
+    "a.rain": (
+        "Heavy rain expected on {date} ({mm} mm). Avoid spraying and fertilizer that day and check drainage.",
+        "{date}న భారీ వర్షం ({mm} మి.మీ) వచ్చే అవకాశం. ఆ రోజు మందులు, ఎరువులు వేయకండి; నీరు పోయే దారి చూడండి."),
+    "a.heat": (
+        "Very hot days ahead (up to {t}°C on {date}). Water in the early morning or evening and avoid spraying at midday.",
+        "రాబోయే రోజుల్లో చాలా వేడి ({date}న {t}°C వరకు). ఉదయం లేదా సాయంత్రం నీరు పెట్టండి; మధ్యాహ్నం మందు కొట్టకండి."),
+    "a.noweather": (
+        "Live weather is not available right now, so watering advice uses standard gaps.",
+        "ప్రత్యక్ష వాతావరణం ఇప్పుడు అందుబాటులో లేదు, కాబట్టి నీటి సలహా సాధారణ వ్యవధుల ఆధారంగా ఉంది."),
+    "a.noloc": (
+        "Add your location to get live weather and exact watering advice.",
+        "ప్రత్యక్ష వాతావరణం, కచ్చితమైన నీటి సలహా కోసం మీ ప్రాంతం నమోదు చేయండి."),
     "fert.confirm": (
         "These doses are general guidelines, not a prescription; confirm with your local KVK or agriculture officer.",
         "ఈ మోతాదులు సాధారణ మార్గదర్శకాలు మాత్రమే; స్థానిక KVK లేదా వ్యవసాయ అధికారిని సంప్రదించి నిర్ధారించుకోండి."),
@@ -71,9 +137,11 @@ M = {  # code: (English, Telugu)
 
 
 def msg(code: str, level: str = "info", crop: str | None = None, **kw) -> dict:
+    """Render a bilingual message. A keyword value may be an (English, Telugu) tuple for text that differs by language."""
     en, te = M[code]
+    kw_en = {k: (v[0] if isinstance(v, tuple) else v) for k, v in kw.items()}
+    kw_te = {k: (v[1] if isinstance(v, tuple) else v) for k, v in kw.items()}
     if crop:
         names = CROP_NAMES.get(crop, (crop, crop))
-        return {"code": code, "level": level, "text": en.format(crop=names[0], **kw),
-                "text_te": te.format(crop=names[1], **kw)}
-    return {"code": code, "level": level, "text": en.format(**kw), "text_te": te.format(**kw)}
+        kw_en["crop"], kw_te["crop"] = names
+    return {"code": code, "level": level, "text": en.format(**kw_en), "text_te": te.format(**kw_te)}
