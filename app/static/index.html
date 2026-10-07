@@ -1,65 +1,96 @@
 <!doctype html>
 <html lang="te"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#2f7d32"><link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#2b7a33"><link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg"><link rel="apple-touch-icon" href="/icon.svg">
-<title>Farmer App</title><link rel="stylesheet" href="/style.css"></head><body>
-<header><h1>🌾 <span data-i="title"></span></h1>
-<div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
-<div class="seg" id="lang"><button data-l="te">తెలుగు</button><button data-l="en">English</button><button data-l="both">రెండూ · Both</button></div>
-<button id="refresh" style="width:auto" data-i="refresh"></button><span id="src" class="badge"></span></div></header>
-<nav id="chips" class="chips" aria-label="Crops"></nav>
-<main>
-<div class="grid" id="kpis"></div>
-<div class="card av" id="emptyNote" hidden></div>
-<div class="card av"><h2 data-i="myCrops"></h2><div id="cropCards" class="ccgrid"></div></div>
-<div class="card cv" id="cropHead"><h2 id="headTitle"></h2><div id="headInfo" class="mut"></div>
-<div style="overflow-x:auto"><table id="plotTbl"></table></div></div>
+<title>Farmer App</title><link rel="stylesheet" href="/style.css"></head><body data-view="all" data-tab="sum">
 
-<div class="card cv" id="calc"><h2 id="calcTitle"></h2>
-<div class="sec"><i class="dot blue"></i><span data-i="moneyOut"></span></div>
-<form id="fc" onsubmit="return false" style="grid-template-columns:1fr 1fr">
-<div><label data-i="invested"></label><input name="invested_per_acre" type="number" inputmode="decimal" min="0" step="any"></div>
-<div><label data-i="yieldQ"></label><input name="yield_q_per_acre" type="number" inputmode="decimal" min="0" step="any"></div>
-<div style="grid-column:1/-1"><label data-i="other"></label><input name="other_per_quintal" type="number" inputmode="decimal" min="0" step="any" value="0"></div>
-</form>
-<div class="sec"><i class="dot org"></i><span data-i="sellPrice"></span></div>
-<label data-i="sellPriceIn"></label><input id="price" type="number" inputmode="decimal" min="0" step="any">
-<input id="slider" type="range" min="500" max="30000" step="10" style="padding:0;margin-top:6px">
-<button id="useMsp" type="button" style="display:none;margin-top:8px;background:var(--card);color:var(--fg);border:1px solid var(--bd)"></button>
-<div id="calcOut"></div></div>
+<header class="top">
+  <div class="bar">
+    <h1><span data-i="title"></span></h1>
+    <div class="bar-r">
+      <div class="seg" id="lang" role="group" aria-label="Language">
+        <button data-l="te" aria-label="తెలుగు">తె</button><button data-l="en" aria-label="English">EN</button><button data-l="both" aria-label="Both">తె·EN</button>
+      </div>
+      <button id="refresh" class="ico" type="button" aria-label="Refresh live prices" title="Refresh live prices">⟳</button>
+    </div>
+  </div>
+  <nav id="chips" class="chips" aria-label="Crops"></nav>
+  <nav id="tabs" class="tabs" aria-label="Sections"></nav>
+</header>
+<div id="src" class="strip" hidden></div>
+<div id="hint" class="hint" hidden></div>
 
-<div class="card cv"><h2 data-i="priceChart"></h2><canvas id="priceChart"></canvas><div id="fcinfo" class="mut"></div></div>
-<div class="two"><div class="card cv"><h2 data-i="sell"></h2><div id="sell"></div></div>
-<div class="card"><h2 data-i="costIns"></h2><div id="cost"></div></div></div>
-<div class="two"><div class="card"><h2 data-i="byCat"></h2><canvas id="catChart"></canvas></div>
-<div class="card"><h2 data-i="byMonth"></h2><canvas id="monChart"></canvas></div></div>
-<div class="card cv"><h2 data-i="markets"></h2><div style="overflow-x:auto"><table id="mk"></table></div></div>
-<div class="two cv">
-<div class="card"><h2 data-i="addExp"></h2><form id="fe">
-<div><label data-i="date"></label><input name="date" type="date" required></div>
-<div><label data-i="category"></label><select name="category"></select></div>
-<div><label data-i="amount"></label><input name="amount" type="number" inputmode="decimal" min="1" step="any" required></div>
-<div><label data-i="note"></label><input name="note" maxlength="200"></div><button data-i="save"></button></form></div>
-<div class="card"><h2 data-i="addSale"></h2><form id="fs">
-<div><label data-i="date"></label><input name="date" type="date" required></div>
-<div><label data-i="qty"></label><input name="qty_quintal" type="number" inputmode="decimal" min="0.01" step="any" required></div>
-<div><label data-i="pricePerQ"></label><input name="price_per_quintal" type="number" inputmode="decimal" min="1" step="any" required></div>
-<div><label data-i="market"></label><input name="market" maxlength="80"></div><button data-i="save"></button></form></div></div>
-<div class="two">
-<div class="card" id="addCrop"><h2 data-i="addCropTitle"></h2><form id="fp">
-<div><label data-i="crop"></label><select name="crop" id="plotCrop"></select></div>
-<div><label data-i="area"></label><input name="area_acre" type="number" inputmode="decimal" min="0.01" step="any" required></div>
-<div><label data-i="sowing"></label><input name="sowing_date" type="date"></div><button data-i="save"></button></form></div>
-<div class="card cv"><h2 data-i="fert"></h2><form id="ff">
-<div><label data-i="area"></label><input name="area_acre" type="number" inputmode="decimal" min="0.01" step="any" required></div>
-<div><label data-i="soilN"></label><input name="soil_n" type="number" min="0" step="any"></div>
-<div><label data-i="soilP"></label><input name="soil_p" type="number" min="0" step="any"></div>
-<div><label data-i="soilK"></label><input name="soil_k" type="number" min="0" step="any"></div>
-<div><label data-i="ph"></label><input name="ph" type="number" min="0" max="14" step="any"></div>
-<button data-i="getPlan"></button></form><div id="fert"></div></div></div>
-<div class="card"><h2 data-i="recentExp"></h2><div style="overflow-x:auto"><table id="exp"></table></div></div>
-<div class="card"><h2 data-i="recentSales"></h2><div style="overflow-x:auto"><table id="sal"></table></div></div>
+<main id="main">
+  <div class="cropbar" id="cropBar" data-t="sum profit prices money fert"></div>
+  <section class="card hero" id="hero" data-t="sum"></section>
+  <div class="grid" id="kpisAll" data-t="all"></div>
+  <div class="grid" id="kpisCrop" data-t="sum"></div>
+  <div class="card" id="emptyNote" data-t="all" hidden></div>
+  <section class="card" data-t="all"><h2 data-i="myCrops"></h2><div id="cropCards" class="ccgrid"></div></section>
+
+  <div class="two">
+    <section class="card" data-t="sum"><h2 data-i="sell"></h2><div id="sell"></div></section>
+    <section class="card" data-t="all sum"><h2 data-i="costIns"></h2><div id="cost"></div></section>
+  </div>
+
+  <section class="card" id="calc" data-t="profit"><h2 id="calcTitle"></h2>
+    <div class="sec"><i class="dot blue"></i><span data-i="moneyOut"></span></div>
+    <form id="fc" onsubmit="return false" class="pair">
+      <div><label data-i="invested"></label><input name="invested_per_acre" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div><label data-i="yieldQ"></label><input name="yield_q_per_acre" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="full"><label data-i="other"></label><input name="other_per_quintal" type="number" inputmode="decimal" min="0" step="any" value="0"></div>
+    </form>
+    <div class="sec"><i class="dot org"></i><span data-i="sellPrice"></span></div>
+    <label data-i="sellPriceIn"></label><input id="price" type="number" inputmode="decimal" min="0" step="any">
+    <input id="slider" type="range" min="500" max="30000" step="10" aria-label="price">
+    <button id="useMsp" class="ghost" type="button" hidden></button>
+    <div id="calcOut"></div>
+  </section>
+
+  <section class="card" data-t="prices"><h2 data-i="priceChart"></h2><canvas id="priceChart"></canvas><div id="fcinfo" class="mut"></div></section>
+  <section class="card" data-t="prices"><h2 data-i="markets"></h2><div class="scroll"><table id="mk"></table></div></section>
+
+  <section class="card" data-t="money">
+    <div class="seg wide" id="moneySeg" role="group"><button data-m="exp"></button><button data-m="sale"></button></div>
+    <form id="fe" class="pair">
+      <div><label data-i="date"></label><input name="date" type="date" required></div>
+      <div><label data-i="category"></label><select name="category"></select></div>
+      <div><label data-i="amount"></label><input name="amount" type="number" inputmode="decimal" min="1" step="any" required></div>
+      <div><label data-i="note"></label><input name="note" maxlength="200"></div><button class="full" data-i="save"></button>
+    </form>
+    <form id="fs" class="pair" hidden>
+      <div><label data-i="date"></label><input name="date" type="date" required></div>
+      <div><label data-i="qty"></label><input name="qty_quintal" type="number" inputmode="decimal" min="0.01" step="any" required></div>
+      <div><label data-i="pricePerQ"></label><input name="price_per_quintal" type="number" inputmode="decimal" min="1" step="any" required></div>
+      <div><label data-i="market"></label><input name="market" maxlength="80"></div><button class="full" data-i="save"></button>
+    </form>
+  </section>
+  <section class="card" data-t="all money"><h2 id="recTitle"></h2><div class="scroll"><table id="rec"></table></div></section>
+  <div class="two" data-t="all money">
+    <section class="card"><h2 data-i="byCat"></h2><canvas id="catChart"></canvas></section>
+    <section class="card"><h2 data-i="byMonth"></h2><canvas id="monChart"></canvas></section>
+  </div>
+
+  <section class="card" data-t="fert"><h2 data-i="fert"></h2>
+    <form id="ff" class="pair">
+      <div><label data-i="area"></label><input name="area_acre" type="number" inputmode="decimal" min="0.01" step="any" required></div>
+      <div><label data-i="soilN"></label><input name="soil_n" type="number" min="0" step="any"></div>
+      <div><label data-i="soilP"></label><input name="soil_p" type="number" min="0" step="any"></div>
+      <div><label data-i="soilK"></label><input name="soil_k" type="number" min="0" step="any"></div>
+      <div><label data-i="ph"></label><input name="ph" type="number" min="0" max="14" step="any"></div>
+      <button class="full" data-i="getPlan"></button>
+    </form><div id="fert"></div>
+  </section>
+
+  <section class="card" data-t="sum"><h2 data-i="plots"></h2><div class="scroll"><table id="plotTbl"></table></div></section>
+  <section class="card" id="addCrop" data-t="all sum"><h2 data-i="addCropTitle"></h2>
+    <form id="fp" class="pair">
+      <div><label data-i="crop"></label><select name="crop" id="plotCrop"></select></div>
+      <div><label data-i="area"></label><input name="area_acre" type="number" inputmode="decimal" min="0.01" step="any" required></div>
+      <div><label data-i="sowing"></label><input name="sowing_date" type="date"></div><button class="full" data-i="save"></button>
+    </form>
+  </section>
 </main>
 <script src="/config.js"></script><script src="/i18n.js"></script>
 <script src="/vendor/chart.umd.js"></script><script src="/app.js"></script>

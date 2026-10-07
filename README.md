@@ -16,6 +16,7 @@ Data is stored in SQLite (`FARMER_DB`, default `./farmer.db`).
 - **Telugu / English / Both** language switch across the UI and all server advice (`text` + `text_te`).
 - **Profit calculator** (`POST /api/calc/profit`): per-acre and per-quintal profit, ROI, break-even, price for a target profit, profit table at other prices, MSP shortcut (`app/msp.json`).
 - **Installable PWA** (offline shell) and a Capacitor wrapper for Android/iOS: see `docs/MOBILE.md`.
+- **Phone-first layout**: crop tabs with pictures at the top, section tabs (Summary / Profit / Prices / Expenses / Fertilizer) in a bottom bar, and crop swapping by tap, ‹ › arrows, swipe or arrow keys. The open section stays the same when you swap crops.
 - **One farmer, many crops**: sticky crop tabs (with profit/loss dot) to swap instantly, an **All crops** overview with one card per crop (profit, cost, price now, 14-day trend), per-crop plots/sowing dates, and each crop remembers its own calculator numbers. `GET /api/overview` serves the cards.
 - **Expenses / sales / plots** per crop (chilli, onion, tomato, paddy, wheat, cotton, maize, groundnut, turmeric); the crop picker drives the whole dashboard.
 - **Dashboard**: cost, revenue, profit, cost/acre, cost/quintal, category + monthly charts, per-market prices.
@@ -29,3 +30,6 @@ Data is stored in SQLite (`FARMER_DB`, default `./farmer.db`).
 - No login: single-user. Run on a trusted network or add auth before exposing publicly.
 - Agmarknet commodity names and field mapping (`app/crops.py`, `app/prices.py`) follow the public schema but were not verified against the live API from the build environment. Test with your key.
 - Next ideas: multi-farmer auth, Telugu/Hindi UI, MSP data, arrivals + weather features in the model, yield tracking.
+
+## Shareable preview
+`python scripts/build_preview.py preview.html` bundles the real site plus snapshots from the real backend (sample farm) into one read-only HTML page.

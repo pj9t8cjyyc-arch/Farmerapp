@@ -57,6 +57,11 @@ const STR = {
   sown: ["Sown {d} ({n} days ago)", "విత్తింది {d} ({n} రోజుల క్రితం)"], notSown: ["Sowing date not set", "విత్తిన తేదీ నమోదు కాలేదు"],
   useMarket: ["Use today's market price: ₹{price}", "నేటి మార్కెట్ ధర వాడండి: ₹{price}"],
   cropCol: ["Crop", "పంట"], lastAct: ["Last entry {d}", "చివరి నమోదు {d}"],
+  tSum: ["Summary", "సారాంశం"], tProfit: ["Profit", "లాభం"], tPrices: ["Prices", "ధరలు"], tMoney: ["Expenses", "ఖర్చులు"], tFert: ["Fertilizer", "ఎరువు"],
+  noSales: ["No sales yet", "అమ్మకాలు లేవు"], mExp: ["Add expense", "ఖర్చు నమోదు"], mSale: ["Record sale", "అమ్మకం నమోదు"],
+  recent: ["Recent entries", "ఇటీవలి నమోదులు"], kind: ["Type", "రకం"], kExp: ["Expense", "ఖర్చు"], kSale: ["Sale", "అమ్మకం"],
+  swipeHint: ["Swipe left or right to change crop", "పంట మార్చడానికి ఎడమ లేదా కుడివైపు స్వైప్ చేయండి"],
+  prevCrop: ["Previous crop", "ముందరి పంట"], nextCrop: ["Next crop", "తరువాతి పంట"],
   demoMix: ["DEMO prices (not real)", "డెమో ధరలు (నిజమైనవి కావు)"],
 };
 const CROPS_TE = {chilli:"మిర్చి",onion:"ఉల్లి",tomato:"టమాటా",paddy:"వరి",wheat:"గోధుమ",cotton:"పత్తి",maize:"మొక్కజొన్న",groundnut:"వేరుశనగ",turmeric:"పసుపు"};
@@ -74,6 +79,11 @@ function L(key, vars) {
   return join(a, b);
 }
 const cropName = k => join(k, CROPS_TE[k] || k);
+const CROP_EM = {chilli:"🌶️",onion:"🧅",tomato:"🍅",paddy:"🍚",wheat:"🌾",cotton:"☁️",maize:"🌽",groundnut:"🥜",turmeric:"🌱"};
+const cropEm = k => CROP_EM[k] || "🌿";
+// two-line label (Telugu over English) when "both" is selected, single line otherwise
+const lines = (en, te) => LANG === "en" ? en : LANG === "te" ? te : te + "\n" + en;
+const cropLines = k => lines(k, CROPS_TE[k] || k);
 const catName = k => join(k, CATS_TE[k] || k);
 // server messages carry text (English) and text_te
 function pick(m) { return LANG === "en" ? m.text : LANG === "te" ? m.text_te : m.text_te + "\n" + m.text; }
