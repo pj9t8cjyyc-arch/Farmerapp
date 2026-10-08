@@ -1,0 +1,6 @@
+{
+  "appId": "com.example.farmerapp",
+  "appName": "Farmer App",
+  "webDir": "../app/static",
+  "server": { "androidScheme": "https" }
+}

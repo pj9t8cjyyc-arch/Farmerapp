@@ -1,0 +1,160 @@
+{
+  "_note": "Crop calendar knowledge base. Days are DAP = days after planting (sowing, or transplanting for transplanted crops). N/P/K are the FRACTION of the crop's total nutrient dose (app/crops.py) applied at each event; fractions of each nutrient must add up to 1 (tests enforce this). kc = FAO-56 style crop coefficient for the stage; irrigation.depletion_mm = soil water deficit at which to irrigate; interval_days = fallback gap when live weather is unavailable. Values are general guidelines compiled from common Indian agronomy practice and are NOT yet reviewed by an agronomist: set reviewed=true per crop only after a KVK/agri-university officer signs off, and adjust for local variety, soil and season.",
+  "maize": {
+    "reviewed": false, "duration_days": [100, 115],
+    "stages": [
+      {"key": "establish", "das": [0, 20], "kc": 0.4, "en": "Establishment", "te": "మొలక దశ"},
+      {"key": "vegetative", "das": [20, 45], "kc": 0.8, "en": "Vegetative growth", "te": "పెరుగుదల దశ"},
+      {"key": "flowering", "das": [45, 70], "kc": 1.2, "en": "Tasseling and silking", "te": "పూత దశ"},
+      {"key": "grain", "das": [70, 100], "kc": 0.8, "en": "Grain filling", "te": "గింజ పోత దశ"},
+      {"key": "maturity", "das": [100, 115], "kc": 0.5, "en": "Maturity", "te": "పక్వ దశ"}],
+    "fertilizer": [
+      {"key": "basal", "das": [0, 5], "N": 0.34, "P": 1, "K": 1, "en": "Basal dose at sowing", "te": "విత్తేటప్పుడు ప్రాథమిక ఎరువు"},
+      {"key": "top1", "das": [25, 30], "N": 0.33, "P": 0, "K": 0, "en": "Top dressing 1 (knee-high)", "te": "పైపాటు 1 (మోకాలి ఎత్తు దశ)"},
+      {"key": "top2", "das": [45, 50], "N": 0.33, "P": 0, "K": 0, "en": "Top dressing 2 (before tasseling)", "te": "పైపాటు 2 (పూతకు ముందు)"}],
+    "irrigation": {"mode": "deficit", "depletion_mm": 40, "interval_days": 10, "stop_before_harvest_days": 10,
+      "critical": [{"das": [28, 35], "en": "Knee-high stage", "te": "మోకాలి ఎత్తు దశ"},
+                   {"das": [50, 65], "en": "Tasseling and silking (most sensitive)", "te": "పూత, కంకి దశ (అత్యంత సున్నితం)"},
+                   {"das": [70, 90], "en": "Grain filling", "te": "గింజ పోత దశ"}]},
+    "tips": [{"en": "If leaves show white-yellow stripes (zinc deficiency), apply zinc sulphate as advised by your agriculture officer.", "te": "ఆకులపై తెల్లని పసుపు చారలు (జింక్ లోపం) కనిపిస్తే వ్యవసాయ అధికారి సలహా ప్రకారం జింక్ సల్ఫేట్ వేయండి."}]
+  },
+  "paddy": {
+    "reviewed": false, "duration_days": [100, 120],
+    "stages": [
+      {"key": "establish", "das": [0, 10], "kc": 1.0, "en": "Establishment after transplanting", "te": "నాటిన తర్వాత స్థిరపడే దశ"},
+      {"key": "tillering", "das": [10, 40], "kc": 1.05, "en": "Tillering", "te": "పిలకల దశ"},
+      {"key": "panicle", "das": [40, 65], "kc": 1.2, "en": "Panicle initiation", "te": "కంకి ఏర్పడే దశ"},
+      {"key": "flowering", "das": [65, 90], "kc": 1.2, "en": "Flowering and grain filling", "te": "పూత, గింజ పోత దశ"},
+      {"key": "maturity", "das": [90, 120], "kc": 0.9, "en": "Ripening", "te": "పక్వ దశ"}],
+    "fertilizer": [
+      {"key": "basal", "das": [0, 3], "N": 0.33, "P": 1, "K": 0.5, "en": "Basal dose at transplanting", "te": "నాటేటప్పుడు ప్రాథమిక ఎరువు"},
+      {"key": "top1", "das": [20, 25], "N": 0.33, "P": 0, "K": 0, "en": "Top dressing 1 (tillering)", "te": "పైపాటు 1 (పిలకల దశ)"},
+      {"key": "top2", "das": [45, 50], "N": 0.34, "P": 0, "K": 0.5, "en": "Top dressing 2 (panicle initiation)", "te": "పైపాటు 2 (కంకి ఏర్పడే దశ)"}],
+    "irrigation": {"mode": "ponded", "depletion_mm": 0, "interval_days": 0, "stop_before_harvest_days": 10,
+      "critical": [{"das": [10, 40], "en": "Keep 2-5 cm of water", "te": "2-5 సెం.మీ. నీరు ఉంచండి"},
+                   {"das": [45, 90], "en": "Do not let the field dry (panicle to grain filling)", "te": "పొలం ఎండకుండా చూడండి (కంకి నుంచి గింజ పోత వరకు)"}]},
+    "tips": [{"en": "After tillering, alternate wetting and drying (re-irrigate when water drops about 15 cm below the soil surface in a field tube) saves water without losing yield.", "te": "పిలకల దశ తర్వాత నీటిని ఆరబెట్టి మళ్ళీ పెట్టే పద్ధతి (పొలంలో గొట్టంలో నీరు నేల కింద సుమారు 15 సెం.మీ. వరకు తగ్గినప్పుడు మళ్ళీ నీరు పెట్టడం) వల్ల దిగుబడి తగ్గకుండా నీరు ఆదా అవుతుంది."}]
+  },
+  "wheat": {
+    "reviewed": false, "duration_days": [115, 130],
+    "stages": [
+      {"key": "establish", "das": [0, 20], "kc": 0.4, "en": "Establishment", "te": "మొలక దశ"},
+      {"key": "tillering", "das": [20, 45], "kc": 0.8, "en": "Tillering", "te": "పిలకల దశ"},
+      {"key": "jointing", "das": [45, 70], "kc": 1.15, "en": "Jointing", "te": "కణుపు దశ"},
+      {"key": "flowering", "das": [70, 95], "kc": 1.15, "en": "Flowering", "te": "పూత దశ"},
+      {"key": "grain", "das": [95, 115], "kc": 0.6, "en": "Grain filling", "te": "గింజ పోత దశ"},
+      {"key": "maturity", "das": [115, 130], "kc": 0.3, "en": "Maturity", "te": "పక్వ దశ"}],
+    "fertilizer": [
+      {"key": "basal", "das": [0, 3], "N": 0.5, "P": 1, "K": 1, "en": "Basal dose at sowing", "te": "విత్తేటప్పుడు ప్రాథమిక ఎరువు"},
+      {"key": "top1", "das": [20, 25], "N": 0.25, "P": 0, "K": 0, "en": "Top dressing 1 (with first irrigation)", "te": "పైపాటు 1 (మొదటి నీటితో)"},
+      {"key": "top2", "das": [40, 45], "N": 0.25, "P": 0, "K": 0, "en": "Top dressing 2 (tillering)", "te": "పైపాటు 2 (పిలకల దశ)"}],
+    "irrigation": {"mode": "deficit", "depletion_mm": 40, "interval_days": 18, "stop_before_harvest_days": 10,
+      "critical": [{"das": [20, 25], "en": "Crown root initiation (most important)", "te": "కిరీట వేర్ల దశ (అత్యంత ముఖ్యం)"},
+                   {"das": [40, 45], "en": "Tillering", "te": "పిలకల దశ"},
+                   {"das": [60, 65], "en": "Jointing", "te": "కణుపు దశ"},
+                   {"das": [80, 85], "en": "Flowering", "te": "పూత దశ"},
+                   {"das": [100, 105], "en": "Milk stage", "te": "పాలు పోసే దశ"}]},
+    "tips": []
+  },
+  "cotton": {
+    "reviewed": false, "duration_days": [150, 180],
+    "stages": [
+      {"key": "establish", "das": [0, 30], "kc": 0.4, "en": "Establishment", "te": "మొలక దశ"},
+      {"key": "squaring", "das": [30, 60], "kc": 0.75, "en": "Square (bud) formation", "te": "మొగ్గ దశ"},
+      {"key": "flowering", "das": [60, 110], "kc": 1.15, "en": "Flowering and boll set", "te": "పూత, కాయ కట్టే దశ"},
+      {"key": "boll", "das": [110, 150], "kc": 0.9, "en": "Boll development", "te": "కాయ అభివృద్ధి దశ"},
+      {"key": "maturity", "das": [150, 180], "kc": 0.6, "en": "Boll opening and picking", "te": "కాయలు పగిలి ఏరే దశ"}],
+    "fertilizer": [
+      {"key": "basal", "das": [0, 5], "N": 0.25, "P": 1, "K": 0.5, "en": "Basal dose at sowing", "te": "విత్తేటప్పుడు ప్రాథమిక ఎరువు"},
+      {"key": "top1", "das": [30, 35], "N": 0.25, "P": 0, "K": 0, "en": "Top dressing 1 (before squaring)", "te": "పైపాటు 1 (మొగ్గ దశకు ముందు)"},
+      {"key": "top2", "das": [55, 60], "N": 0.25, "P": 0, "K": 0.5, "en": "Top dressing 2 (squaring)", "te": "పైపాటు 2 (మొగ్గ దశ)"},
+      {"key": "top3", "das": [80, 90], "N": 0.25, "P": 0, "K": 0, "en": "Top dressing 3 (flowering)", "te": "పైపాటు 3 (పూత దశ)"}],
+    "irrigation": {"mode": "deficit", "depletion_mm": 50, "interval_days": 14, "stop_before_harvest_days": 20,
+      "critical": [{"das": [40, 60], "en": "Squaring", "te": "మొగ్గ దశ"},
+                   {"das": [60, 100], "en": "Flowering and boll set (most sensitive)", "te": "పూత, కాయ కట్టే దశ (అత్యంత సున్నితం)"},
+                   {"das": [100, 130], "en": "Boll development", "te": "కాయ అభివృద్ధి దశ"}]},
+    "tips": []
+  },
+  "chilli": {
+    "reviewed": false, "duration_days": [140, 180],
+    "stages": [
+      {"key": "establish", "das": [0, 25], "kc": 0.6, "en": "Establishment after transplanting", "te": "నాటిన తర్వాత స్థిరపడే దశ"},
+      {"key": "vegetative", "das": [25, 60], "kc": 0.85, "en": "Vegetative growth", "te": "పెరుగుదల దశ"},
+      {"key": "flowering", "das": [60, 110], "kc": 1.05, "en": "Flowering and fruit set", "te": "పూత, కాయ కట్టే దశ"},
+      {"key": "picking", "das": [110, 160], "kc": 0.9, "en": "Picking", "te": "కోత దశ"},
+      {"key": "end", "das": [160, 180], "kc": 0.7, "en": "Last pickings", "te": "చివరి కోతలు"}],
+    "fertilizer": [
+      {"key": "basal", "das": [0, 5], "N": 0.34, "P": 1, "K": 0.34, "en": "Basal dose at transplanting", "te": "నాటేటప్పుడు ప్రాథమిక ఎరువు"},
+      {"key": "top1", "das": [30, 35], "N": 0.33, "P": 0, "K": 0.33, "en": "Top dressing 1", "te": "పైపాటు 1"},
+      {"key": "top2", "das": [60, 65], "N": 0.33, "P": 0, "K": 0.33, "en": "Top dressing 2 (flowering)", "te": "పైపాటు 2 (పూత దశ)"}],
+    "irrigation": {"mode": "deficit", "depletion_mm": 30, "interval_days": 8, "stop_before_harvest_days": 0,
+      "critical": [{"das": [45, 75], "en": "Flowering", "te": "పూత దశ"},
+                   {"das": [70, 110], "en": "Fruit set and development", "te": "కాయ కట్టే, పెరిగే దశ"}]},
+    "tips": [{"en": "Keep soil moisture even: swings between dry and wet cause flower and fruit drop.", "te": "నేల తేమ ఒకేలా ఉంచండి: ఎండి తడిసే మార్పుల వల్ల పూత, కాయ రాలుతాయి."}]
+  },
+  "tomato": {
+    "reviewed": false, "duration_days": [110, 140],
+    "stages": [
+      {"key": "establish", "das": [0, 20], "kc": 0.6, "en": "Establishment after transplanting", "te": "నాటిన తర్వాత స్థిరపడే దశ"},
+      {"key": "vegetative", "das": [20, 40], "kc": 0.85, "en": "Vegetative growth", "te": "పెరుగుదల దశ"},
+      {"key": "flowering", "das": [40, 65], "kc": 1.15, "en": "Flowering", "te": "పూత దశ"},
+      {"key": "fruiting", "das": [65, 110], "kc": 1.1, "en": "Fruit development", "te": "కాయ అభివృద్ధి దశ"},
+      {"key": "picking", "das": [110, 140], "kc": 0.8, "en": "Late picking", "te": "చివరి కోతలు"}],
+    "fertilizer": [
+      {"key": "basal", "das": [0, 5], "N": 0.34, "P": 1, "K": 0.5, "en": "Basal dose at transplanting", "te": "నాటేటప్పుడు ప్రాథమిక ఎరువు"},
+      {"key": "top1", "das": [25, 30], "N": 0.33, "P": 0, "K": 0.25, "en": "Top dressing 1", "te": "పైపాటు 1"},
+      {"key": "top2", "das": [45, 50], "N": 0.33, "P": 0, "K": 0.25, "en": "Top dressing 2 (flowering)", "te": "పైపాటు 2 (పూత దశ)"}],
+    "irrigation": {"mode": "deficit", "depletion_mm": 25, "interval_days": 6, "stop_before_harvest_days": 0,
+      "critical": [{"das": [40, 65], "en": "Flowering", "te": "పూత దశ"},
+                   {"das": [65, 100], "en": "Fruit development", "te": "కాయ అభివృద్ధి దశ"}]},
+    "tips": [{"en": "Even watering avoids fruit cracking and blossom-end rot.", "te": "సమంగా నీరు పెడితే కాయలు పగలడం, కాయ అడుగు నల్లబడడం తగ్గుతాయి."}]
+  },
+  "onion": {
+    "reviewed": false, "duration_days": [100, 120],
+    "stages": [
+      {"key": "establish", "das": [0, 20], "kc": 0.7, "en": "Establishment after transplanting", "te": "నాటిన తర్వాత స్థిరపడే దశ"},
+      {"key": "vegetative", "das": [20, 50], "kc": 0.9, "en": "Leaf growth", "te": "ఆకు పెరుగుదల దశ"},
+      {"key": "bulb", "das": [50, 85], "kc": 1.05, "en": "Bulb formation", "te": "గడ్డ ఏర్పడే దశ"},
+      {"key": "maturity", "das": [85, 120], "kc": 0.75, "en": "Maturity", "te": "పక్వ దశ"}],
+    "fertilizer": [
+      {"key": "basal", "das": [0, 5], "N": 0.5, "P": 1, "K": 1, "en": "Basal dose at transplanting", "te": "నాటేటప్పుడు ప్రాథమిక ఎరువు"},
+      {"key": "top1", "das": [25, 30], "N": 0.25, "P": 0, "K": 0, "en": "Top dressing 1", "te": "పైపాటు 1"},
+      {"key": "top2", "das": [45, 50], "N": 0.25, "P": 0, "K": 0, "en": "Top dressing 2 (start of bulbing)", "te": "పైపాటు 2 (గడ్డ ఏర్పడే ముందు)"}],
+    "irrigation": {"mode": "deficit", "depletion_mm": 20, "interval_days": 7, "stop_before_harvest_days": 12,
+      "critical": [{"das": [50, 85], "en": "Bulb formation", "te": "గడ్డ ఏర్పడే దశ"}]},
+    "tips": [{"en": "Stop irrigation 10-15 days before harvest: bulbs store longer.", "te": "కోతకు 10-15 రోజుల ముందు నీరు ఆపండి: గడ్డలు ఎక్కువ రోజులు నిల్వ ఉంటాయి."}]
+  },
+  "groundnut": {
+    "reviewed": false, "duration_days": [100, 120],
+    "stages": [
+      {"key": "establish", "das": [0, 20], "kc": 0.45, "en": "Establishment", "te": "మొలక దశ"},
+      {"key": "flowering", "das": [20, 45], "kc": 0.8, "en": "Flowering", "te": "పూత దశ"},
+      {"key": "pegging", "das": [45, 70], "kc": 1.05, "en": "Pegging and pod set", "te": "ఊడలు దిగే, కాయ కట్టే దశ"},
+      {"key": "pod", "das": [70, 100], "kc": 0.95, "en": "Pod filling", "te": "కాయ పోత దశ"},
+      {"key": "maturity", "das": [100, 120], "kc": 0.6, "en": "Maturity", "te": "పక్వ దశ"}],
+    "fertilizer": [
+      {"key": "basal", "das": [0, 5], "N": 1, "P": 1, "K": 1, "en": "Basal dose at sowing", "te": "విత్తేటప్పుడు ప్రాథమిక ఎరువు"},
+      {"key": "gypsum", "das": [40, 45], "N": 0, "P": 0, "K": 0, "extra": {"name": "Gypsum", "kg_per_ha": 500}, "en": "Gypsum at flowering (for pod filling)", "te": "పూత దశలో జిప్సం (కాయ పోతకు)"}],
+    "irrigation": {"mode": "deficit", "depletion_mm": 35, "interval_days": 10, "stop_before_harvest_days": 10,
+      "critical": [{"das": [25, 45], "en": "Flowering", "te": "పూత దశ"},
+                   {"das": [45, 65], "en": "Pegging (soil must stay moist)", "te": "ఊడలు దిగే దశ (నేల తేమగా ఉండాలి)"},
+                   {"das": [65, 95], "en": "Pod filling", "te": "కాయ పోత దశ"}]},
+    "tips": []
+  },
+  "turmeric": {
+    "reviewed": false, "duration_days": [240, 270],
+    "stages": [
+      {"key": "establish", "das": [0, 40], "kc": 0.5, "en": "Sprouting and establishment", "te": "మొలక, స్థిరపడే దశ"},
+      {"key": "vegetative", "das": [40, 120], "kc": 0.85, "en": "Leaf and tiller growth", "te": "ఆకు, పిలక పెరుగుదల దశ"},
+      {"key": "rhizome", "das": [120, 210], "kc": 1.1, "en": "Rhizome development", "te": "దుంప (కొమ్ము) అభివృద్ధి దశ"},
+      {"key": "maturity", "das": [210, 270], "kc": 0.8, "en": "Maturity (leaves dry)", "te": "పక్వ దశ (ఆకులు ఎండుతాయి)"}],
+    "fertilizer": [
+      {"key": "basal", "das": [0, 5], "N": 0.25, "P": 1, "K": 0.5, "en": "Basal dose at planting", "te": "నాటేటప్పుడు ప్రాథమిక ఎరువు"},
+      {"key": "top1", "das": [40, 45], "N": 0.25, "P": 0, "K": 0, "en": "Top dressing 1", "te": "పైపాటు 1"},
+      {"key": "top2", "das": [80, 90], "N": 0.25, "P": 0, "K": 0.25, "en": "Top dressing 2", "te": "పైపాటు 2"},
+      {"key": "top3", "das": [120, 130], "N": 0.25, "P": 0, "K": 0.25, "en": "Top dressing 3", "te": "పైపాటు 3"}],
+    "irrigation": {"mode": "deficit", "depletion_mm": 30, "interval_days": 8, "stop_before_harvest_days": 15,
+      "critical": [{"das": [100, 200], "en": "Rhizome development", "te": "దుంప అభివృద్ధి దశ"}]},
+    "tips": []
+  }
+}
