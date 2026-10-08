@@ -124,7 +124,7 @@ out = f"""<title>Farmer App</title>
 .pv button{{width:auto;min-height:0;padding:1px 10px;margin-left:8px;font-size:12px}}</style>
 <div class="pv">Preview with sample farm data and sample weather. Saving is turned off here.
 <button type="button" onclick="openWizard('first')">Try first-time setup</button>
-<button type="button" onclick="S.auth={{required:true,channels:['whatsapp','sms'],dev:true}};openLogin()">Try sign-in (code 123456)</button>
+<button type="button" onclick="S.auth={{required:true,phone:true,google_client_id:null,dev:true}};openLogin()">Try sign-in (code 123456)</button>
 <button type="button" onclick="openAccount()">Account menu</button></div>
 {body}
 <script>{SHIM}</script>

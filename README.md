@@ -13,7 +13,7 @@ pytest
 Data is stored in SQLite (`FARMER_DB`, default `./farmer.db`).
 
 ## Accounts (v0.3)
-Sign in with a mobile number and a 6-digit code sent on WhatsApp or SMS (Twilio or Meta WhatsApp Cloud). Each farmer's data is private; there is an account-deletion option. Set-up and safety details: `docs/AUTH.md`. `FARMER_AUTH=off` keeps single-user mode.
+Sign in with Google (Gmail) or with a mobile number and a 6-digit SMS code (Twilio). The two ways make separate accounts. Each farmer's data is private; there is an account-deletion option. Set-up and safety details: `docs/AUTH.md`. `FARMER_AUTH=off` keeps single-user mode.
 
 ## Farm assistant (v0.2)
 - **One-minute setup** (first run): language, place (GPS or district), crops by picture, then per crop: acres (stepper), planting date (chips), water source, last watering. Season (kharif/rabi/summer) is worked out from the planting date.
@@ -38,9 +38,9 @@ Sign in with a mobile number and a 6-digit code sent on WhatsApp or SMS (Twilio 
 - `/api/weather?lat=&lon=` proxies Open-Meteo (7-day outlook).
 
 ## Caveats
-- Login needs a message provider and, in India, DLT registration for SMS or an approved WhatsApp template; see `docs/AUTH.md`. Provider calls are untested against the live services.
+- Google sign-in needs a `GOOGLE_CLIENT_ID`; SMS sign-in needs Twilio and, in India, DLT registration; see `docs/AUTH.md`. Neither has been run against the live services.
 - Agmarknet commodity names and field mapping (`app/crops.py`, `app/prices.py`) follow the public schema but were not verified against the live API from the build environment. Test with your key.
-- Next ideas: multi-farmer auth, Telugu/Hindi UI, MSP data, arrivals + weather features in the model, yield tracking.
+- Next ideas: linking a Google account to a phone number, Hindi UI, arrivals + weather features in the model, yield tracking.
 
 ## Shareable preview
 `python scripts/build_preview.py preview.html` bundles the real site plus snapshots from the real backend (sample farm) into one read-only HTML page.

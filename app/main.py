@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
-from . import advice, auth, clock, crops, db, engine, forecast, places, prices
+from . import advice, auth, clock, crops, db, engine, forecast, google_login, places, prices
 from . import weather as wx
 
 _Date = date  # alias: a model field called "date" would shadow the type inside its own class body
@@ -45,8 +45,13 @@ _origins = os.environ.get("FARMER_CORS_ORIGINS", "capacitor://localhost,http://l
 app.add_middleware(CORSMiddleware, allow_origins=[o for o in _origins.split(",") if o],
                    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"], allow_headers=["Content-Type", "Authorization"])
 
-CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; "
-       "frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+def _csp() -> str:
+    g = bool(google_login.client_ids())   # Google's sign-in button needs its own script, styles, frame and requests
+    return ("default-src 'self'; script-src 'self'" + (" https://accounts.google.com/gsi/client" if g else "")
+            + "; style-src 'self' 'unsafe-inline'" + (" https://accounts.google.com/gsi/style" if g else "")
+            + "; img-src 'self' data:; connect-src 'self'" + (" https://accounts.google.com/gsi/" if g else "")
+            + ("; frame-src https://accounts.google.com/gsi/" if g else "")
+            + "; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
 
 
 @app.middleware("http")
@@ -55,7 +60,7 @@ async def security_headers(request, call_next):
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["Referrer-Policy"] = "same-origin"
     if not request.url.path.startswith(("/docs", "/redoc", "/openapi")):
-        resp.headers["Content-Security-Policy"] = CSP
+        resp.headers["Content-Security-Policy"] = _csp()
     if request.url.path.startswith("/api/"):
         resp.headers["Cache-Control"] = "no-store"
     return resp

@@ -1,6 +1,7 @@
-"""Phone-number login with one-time codes (SMS or WhatsApp), bearer-token sessions, per-farmer data scoping.
+"""Sign in with Google (Gmail) or with a phone number and an SMS code; bearer-token sessions; per-farmer data scoping.
 
 Safety rules implemented here:
+- Google: the ID token is verified on the server (signature, audience, issuer, expiry, verified e-mail); see google_login.py;
 - codes are random 6 digits, stored only as an HMAC (never in clear), valid 5 minutes, burned after 5 wrong tries;
 - send limits: 30 s between sends, 5 per hour per number, 20 per hour per IP; the response never reveals whether a number is registered;
 - session tokens are random 256-bit values, stored only as a SHA-256 hash, 90-day sliding expiry, at most 10 per farmer;
@@ -17,7 +18,7 @@ import time
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from . import db, otp_providers
+from . import db, google_login, otp_providers
 
 log = logging.getLogger("farmer.auth")
 router = APIRouter(prefix="/api/auth")
@@ -64,11 +65,10 @@ def _client_ip(request: Request) -> str:
 
 
 # ---------------- codes ----------------
-def request_code(phone: str, channel: str, ip: str, now: int | None = None) -> dict:
+def request_code(phone: str, ip: str, now: int | None = None) -> dict:
     now = now or int(time.time())
-    channels = otp_providers.allowed_channels()
-    if channel not in channels:
-        raise HTTPException(422, f"channel must be one of {channels}")
+    if not otp_providers.sms_ready():
+        raise HTTPException(503, "Phone sign-in is not available.")
     with db.conn() as c:
         last = c.execute("SELECT MAX(created) m FROM otps WHERE phone=?", (phone,)).fetchone()["m"]
         if last and now - last < RESEND_GAP:
@@ -79,15 +79,15 @@ def request_code(phone: str, channel: str, ip: str, now: int | None = None) -> d
             raise HTTPException(429, "Too many requests from this network. Try again later.")
         code = f"{secrets.randbelow(10**6):06d}"
         c.execute("UPDATE otps SET consumed=1 WHERE phone=? AND consumed=0", (phone,))   # only the newest code works
-        row = c.execute("INSERT INTO otps (phone, code_hash, channel, ip, created, expires) VALUES (?,?,?,?,?,?)",
-                        (phone, _hash_code(phone, code), channel, ip, now, now + OTP_TTL)).lastrowid
+        row = c.execute("INSERT INTO otps (phone, code_hash, channel, ip, created, expires) VALUES (?,?,'sms',?,?,?)",
+                        (phone, _hash_code(phone, code), ip, now, now + OTP_TTL)).lastrowid
     try:
-        otp_providers.get().send(phone, code, channel)
+        otp_providers.get().send(phone, code)
     except otp_providers.SendError as e:
         with db.conn() as c:
             c.execute("DELETE FROM otps WHERE id=?", (row,))
-        log.error("code delivery failed via %s: %s", channel, e)
-        raise HTTPException(502, "Could not send the code. Try the other option or try again later.") from None
+        log.error("code delivery failed: %s", e)
+        raise HTTPException(502, "Could not send the code. Try Google sign-in or try again later.") from None
     out = {"ok": True, "cooldown_s": RESEND_GAP}
     if os.environ.get("FARMER_OTP_PROVIDER", "console") == "console" and os.environ.get("FARMER_DEV_OTP") == "1":
         out["dev_code"] = code   # development convenience; never enabled with a real provider
@@ -108,8 +108,22 @@ def verify_code(phone: str, code: str, now: int | None = None) -> tuple[str, int
             c.commit()
             raise HTTPException(400, "Wrong code.")
         c.execute("UPDATE otps SET consumed=1 WHERE id=?", (row["id"],))
-    fid, new = _get_or_create_farmer(phone, now)
+    fid, new = _get_or_create_farmer(now, phone=phone)
     return _new_session(fid, now), fid, new
+
+
+def google_login_session(credential: str, now: int | None = None) -> tuple[str, int, bool, str]:
+    """Verify a Google ID token; returns (session token, farmer id, is_new_farmer, e-mail)."""
+    now = now or int(time.time())
+    try:
+        g = google_login.verify(credential)
+    except google_login.GoogleError as e:
+        if str(e) == "not configured":
+            raise HTTPException(503, "Google sign-in is not available.") from None
+        log.info("Google sign-in rejected: %s", e)
+        raise HTTPException(401, "Google sign-in failed.") from None
+    fid, new = _get_or_create_farmer(now, google=g)
+    return _new_session(fid, now), fid, new, g["email"]
 
 
 # ---------------- farmers and sessions ----------------
@@ -123,13 +137,17 @@ def claim_legacy(c, fid: int) -> None:
                   (fid, old["district"], old["lat"], old["lon"], old["onboarded"]))
 
 
-def _get_or_create_farmer(phone: str, now: int) -> tuple[int, bool]:
+def _get_or_create_farmer(now: int, *, phone: str | None = None, google: dict | None = None) -> tuple[int, bool]:
+    col, val = ("phone", phone) if phone else ("google_sub", google["sub"])   # col is one of two constants
     with db.conn() as c:
-        row = c.execute("SELECT id FROM farmers WHERE phone=?", (phone,)).fetchone()
+        row = c.execute(f"SELECT id FROM farmers WHERE {col}=?", (val,)).fetchone()
         if row:
+            if google:
+                c.execute("UPDATE farmers SET email=? WHERE id=?", (google["email"], row["id"]))
             return row["id"], False
         first = c.execute("SELECT COUNT(*) n FROM farmers").fetchone()["n"] == 0
-        fid = c.execute("INSERT INTO farmers (phone, created_at) VALUES (?,?)", (phone, now)).lastrowid
+        fid = c.execute("INSERT INTO farmers (phone, email, google_sub, created_at) VALUES (?,?,?,?)",
+                        (phone, google and google["email"], google and google["sub"], now)).lastrowid
         if first:
             claim_legacy(c, fid)
         return fid, True
@@ -180,14 +198,17 @@ def delete_account(fid: int) -> None:
         c.execute("DELETE FROM farmer_farm WHERE farmer_id=?", (fid,))
         phone = c.execute("SELECT phone FROM farmers WHERE id=?", (fid,)).fetchone()
         c.execute("DELETE FROM farmers WHERE id=?", (fid,))
-        if phone:
+        if phone and phone["phone"]:
             c.execute("DELETE FROM otps WHERE phone=?", (phone["phone"],))
 
 
 # ---------------- routes ----------------
 class RequestIn(BaseModel):
     phone: str = Field(max_length=24)
-    channel: str = Field("whatsapp", max_length=12)
+
+
+class GoogleIn(BaseModel):
+    credential: str = Field(min_length=20, max_length=4096)
 
 
 class VerifyIn(BaseModel):
@@ -201,7 +222,8 @@ class DeleteIn(BaseModel):
 
 @router.get("/config")
 def config():
-    return {"required": required(), "channels": otp_providers.allowed_channels(),
+    ids = google_login.client_ids()
+    return {"required": required(), "phone": otp_providers.sms_ready(), "google_client_id": ids[0] if ids else None,
             "dev": os.environ.get("FARMER_OTP_PROVIDER", "console") == "console" and os.environ.get("FARMER_DEV_OTP") == "1"}
 
 
@@ -211,7 +233,7 @@ def request_otp(body: RequestIn, request: Request):
         phone = normalize_phone(body.phone)
     except ValueError:
         raise HTTPException(422, "Enter a valid mobile number.") from None
-    return request_code(phone, body.channel, _client_ip(request))
+    return request_code(phone, _client_ip(request))
 
 
 @router.post("/verify")
@@ -224,10 +246,16 @@ def verify(body: VerifyIn):
     return {"token": token, "farmer": {"id": fid, "phone": phone}, "new": new}
 
 
+@router.post("/google")
+def google(body: GoogleIn):
+    token, fid, new, email = google_login_session(body.credential)
+    return {"token": token, "farmer": {"id": fid, "email": email}, "new": new}
+
+
 @router.get("/me")
 def me(fid: int = Depends(farmer_id)):
     with db.conn() as c:
-        return {"id": fid, "phone": c.execute("SELECT phone FROM farmers WHERE id=?", (fid,)).fetchone()["phone"]}
+        return dict(c.execute("SELECT id, phone, email FROM farmers WHERE id=?", (fid,)).fetchone())
 
 
 @router.post("/logout")

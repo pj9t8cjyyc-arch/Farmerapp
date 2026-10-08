@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS farm (
     lat REAL, lon REAL, onboarded INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS farmers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL
+    id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT UNIQUE, email TEXT, google_sub TEXT UNIQUE, created_at INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS otps (
     id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL, code_hash TEXT NOT NULL, channel TEXT NOT NULL,
@@ -88,6 +88,15 @@ def init():
             if "farmer_id" not in {r["name"] for r in c.execute(f"PRAGMA table_info({t})")}:
                 c.execute(f"ALTER TABLE {t} ADD COLUMN farmer_id INTEGER")
             c.execute(f"CREATE INDEX IF NOT EXISTS ix_{t}_farmer ON {t} (farmer_id)")
+        if "google_sub" not in {r["name"] for r in c.execute("PRAGMA table_info(farmers)")}:
+            # phone-only table from v0.3: rebuild so phone may be empty (Google accounts) and email / google_sub exist
+            c.executescript("""
+                BEGIN;
+                ALTER TABLE farmers RENAME TO farmers_old;
+                CREATE TABLE farmers (id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT UNIQUE, email TEXT, google_sub TEXT UNIQUE, created_at INTEGER NOT NULL);
+                INSERT INTO farmers (id, phone, created_at) SELECT id, phone, created_at FROM farmers_old;
+                DROP TABLE farmers_old;
+                COMMIT;""")
         have = {r["name"] for r in c.execute("PRAGMA table_info(plots)")}
         for col, ddl in PLOT_COLUMNS.items():  # upgrade databases created by earlier versions
             if col not in have:

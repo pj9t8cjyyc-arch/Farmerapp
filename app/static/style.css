@@ -183,6 +183,8 @@ button.cc .prog{margin-top:4px}
 /* sign-in */
 .phone{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}.phone b{font-size:22px}
 .phone input{font-size:24px;letter-spacing:.06em;min-height:58px}
+.gbtn{display:flex;justify-content:center;min-height:44px;margin:6px 0}
+.or{display:flex;align-items:center;gap:12px;color:var(--mut);font-size:14px;margin:10px 0}.or::before,.or::after{content:"";flex:1;border-top:1px solid currentColor;opacity:.3}
 input.otp{font-size:32px;letter-spacing:.45em;text-align:center;min-height:64px;font-variant-numeric:tabular-nums}
 .wz .opt.danger,.wz .go.danger{border-color:var(--bad);color:var(--bad)}.wz .go.danger{background:var(--bad);color:#fff}
 .wz label{font-size:14px}
